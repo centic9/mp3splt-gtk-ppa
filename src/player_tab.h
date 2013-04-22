@@ -3,7 +3,7 @@
  * mp3splt-gtk -- utility based on mp3splt,
  *                for mp3/ogg splitting without decoding
  *
- * Copyright (c) 2005-2011 Alexandru Munteanu - io_fx@yahoo.fr
+ * Copyright (c) 2005-2012 Alexandru Munteanu - io_fx@yahoo.fr
  *
  * http://mp3splt.sourceforge.net/
  *
@@ -40,6 +40,8 @@
 
 #define ICON_EXT ".svg"
 
+#define DEFAULT_TIMEOUT_VALUE 200
+
 //!time structure
 typedef struct
 {
@@ -66,7 +68,7 @@ void get_splitpoint_time_left_right(gint *time_left,
                                     gint *splitpoint_left);
 gint mytimer(gpointer data);
 void reset_inactive_progress_bar();
-void reset_inactive_volume_bar();
+void reset_inactive_volume_button();
 void reset_label_time();
 void reset_song_infos();
 void reset_song_name_label();
@@ -115,24 +117,24 @@ void print_about_the_song();
 void print_player_filename();
 void print_all_song_infos();
 void print_song_time_elapsed();
-void change_volume_bar();
+void change_volume_button();
 void change_progress_bar();
 GtkWidget *create_filename_player_hbox();
-void change_volume_event(GtkWidget *widget,
-                         gpointer data);
-gboolean volume_bar_unclick_event (GtkWidget *widget,
+void change_volume_event(GtkScaleButton *volume_button, gdouble value, gpointer data);
+
+gboolean volume_button_unclick_event (GtkWidget *widget,
                                    GdkEventCrossing *event,
                                    gpointer user_data);
-gboolean volume_bar_click_event (GtkWidget *widget,
+gboolean volume_button_click_event (GtkWidget *widget,
                                  GdkEventCrossing *event,
                                  gpointer user_data);
-gboolean volume_bar_enter_event (GtkWidget *widget,
+gboolean volume_button_enter_event (GtkWidget *widget,
                                  GdkEventCrossing *event,
                                  gpointer user_data);
-gboolean volume_bar_leave_event (GtkWidget *widget,
+gboolean volume_button_leave_event (GtkWidget *widget,
                                  GdkEventCrossing *event,
                                  gpointer user_data);
-gboolean volume_bar_scroll_event (GtkWidget *widget,
+gboolean volume_button_scroll_event (GtkWidget *widget,
                                   GdkEventScroll *event,
                                   gpointer user_data);
 GtkWidget *create_volume_control_box();
@@ -141,7 +143,6 @@ void close_player_popup_window_event( GtkWidget *window,
 void handle_player_detached_event (GtkHandleBox *handlebox,
                                    GtkWidget *widget,
                                    gpointer data);
-PangoLayout *get_drawing_text(gchar *str);
 gfloat get_right_drawing_time();
 gfloat get_left_drawing_time();
 gint get_time_hundrsecs(gint time);
@@ -211,7 +212,10 @@ void show_disconnect_button();
 void inputfilename_set(const gchar *filename);
 gchar *inputfilename_get();
 
-void build_svg_path(GString *imagefile, gchar *svg_filename);
+void build_path(GString *path, const gchar *dir, const gchar *filename);
+
+void close_playlist_popup_window_event(GtkWidget *window, gpointer data);
+void restart_player_timer();
 
 #endif
 

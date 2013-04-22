@@ -1,9 +1,11 @@
 #!/usr/bin/make -f
 # -*- makefile -*-
 
-%:
-	dh $@ --with autoreconf
+include /usr/share/libmp3splt-dev/mp3splt.rules
 
-override_dh_auto_configure:
-	dh_auto_configure -- --disable-mp3splttest --enable-gtk3
-
+BUILD_DEPS := $(BUILD_DEPS), libgtk-3-dev, libgstreamer0.10-dev, libgstreamer-plugins-base0.10-dev, audacious-dev, gnome-doc-utils, rarian-compat
+EXTRA_CONFIGURE_OPTS=--enable-gtk3 --disable-gtk2
+LONG_INTERFACE="graphical"
+SHORT_INTERFACE="GTK"
+SUGGESTS=audacious
+RECOMMENDS=gstreamer0.10-plugins-good

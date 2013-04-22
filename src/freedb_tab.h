@@ -3,7 +3,7 @@
  * mp3splt-gtk -- utility based on mp3splt,
  *                for mp3/ogg splitting without decoding
  *
- * Copyright: (C) 2005-2011 Alexandru Munteanu
+ * Copyright: (C) 2005-2012 Alexandru Munteanu
  * Contact: io_fx@yahoo.fr
  *
  * http://mp3splt.sourceforge.net/
@@ -67,3 +67,6 @@ void update_splitpoints_from_the_state();
 void freedb_add_button_clicked_event(GtkButton *button,
                                      gpointer data);
 GtkWidget *create_freedb_frame();
+
+void hide_freedb_spinner();
+

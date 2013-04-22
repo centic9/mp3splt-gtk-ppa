@@ -1,22 +1,39 @@
-mp3splt-gtk (0.7.1-0ubuntu3) precise; urgency=low
+mp3splt-gtk (0.7.2-2ubuntu1) raring; urgency=low
 
-  * Build with dh-autoreconf to pickup gtk3 macros. (LP: #934985)
+  * debian/patches/link-against-dbus-glib-1.patch: Link against dbus-glib-1 to
+    fix underlinking FTBFS.
 
- -- Andreas Moog <amoog@ubuntu.com>  Sat, 18 Feb 2012 22:41:37 +0100
+ -- Logan Rosen <logan@ubuntu.com>  Sun, 21 Apr 2013 21:31:09 -0400
 
-mp3splt-gtk (0.7.1-0ubuntu2) precise; urgency=low
+mp3splt-gtk (0.7.2-2) unstable; urgency=low
 
-  * Add missing build-depends on gnome-doc-utils and rarian-compat
+  * Include dependencies on libmp3splt-* plugin packages
 
- -- Andreas Moog <amoog@ubuntu.com>  Sun, 08 Jan 2012 14:53:36 +0100
+ -- Ryan Niebur <ryan@debian.org>  Fri, 08 Jun 2012 18:25:06 -0700
 
-mp3splt-gtk (0.7.1-0ubuntu1) precise; urgency=low
+mp3splt-gtk (0.7.2-1) unstable; urgency=low
 
-  * New upstream version
-  * Drop patches, merged upstream
-  * Build-Depend on gtk3
+  * move debian/rules to the libmp3splt-dev package
+  * regenerate debian/control against libmp3splt 0.7.2-1, to get the
+    bumped build dep
+  * change build dependency on debhelper to 7.0.50 instead of 7.2
+  * standards version 3.9.3
+  * remove dep on libmp3splt-plugins, moved to libmp3splt0
+  * suggest mp3splt
+  * New Upstream Version
+    - Build against Gtk3 (Closes: #665441)
+    - Does not open the first file automatically (Closes: #589888)
+  * Update maintainer address, standards version, and vcs-* fields to
+    collab-maint
+  * Remove DMUA field
+  * Remove quilt patching, 01-audacious_flags.patch is fixed upstream
+  * add build dependency for gnome-doc-utils and rarian-compat
+  * Use quilt 3.0 source format
+  * add TODO and README to docs
+  * Update debian/copyright
+  * convert to copyright format 1.0
 
- -- Andreas Moog <amoog@ubuntu.com>  Sun, 08 Jan 2012 12:52:31 +0100
+ -- Ryan Niebur <ryan@debian.org>  Mon, 04 Jun 2012 00:23:19 -0700
 
 mp3splt-gtk (0.5.6-1.2) unstable; urgency=low
 

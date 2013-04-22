@@ -2,29 +2,18 @@ Source: mp3splt-gtk
 Section: sound
 Priority: optional
 Maintainer: Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com>
-XSBC-Original-Maintainer: Ryan Niebur <ryanryan52@gmail.com>
-DM-Upload-Allowed: yes
-Build-Depends: audacious-dev (>= 3.2),
-               autopoint,
-               dh-autoreconf,
-               debhelper (>= 7.2),
-               gnome-doc-utils (>= 0.3.2),
-               libgstreamer-plugins-base0.10-dev,
-               libgstreamer0.10-dev,
-               libgtk-3-dev,
-               libmp3splt-dev (<< 0.7.2~),
-               libmp3splt-dev (>= 0.7.1),
-               rarian-compat
-Standards-Version: 3.8.1
+XSBC-Original-Maintainer: Ryan Niebur <ryan@debian.org>
+Build-Depends: debhelper (>= 7.0.50), libgtk-3-dev, libgstreamer0.10-dev, libgstreamer-plugins-base0.10-dev, audacious-dev, gnome-doc-utils, rarian-compat, libmp3splt-dev (>= 0.7.2-2~), libmp3splt-dev (<< 0.7.3~)
+Standards-Version: 3.9.3
 Homepage: http://mp3splt.sourceforge.net/
-Vcs-Git: git://git.ryan52.info/git/mp3splt-gtk
-Vcs-Browser: http://git.ryan52.info/?p=mp3splt-gtk;a=summary
+Vcs-Git: git://anonscm.debian.org/collab-maint/mp3splt-gtk.git
+Vcs-Browser: http://anonscm.debian.org/gitweb/?p=collab-maint/mp3splt-gtk.git;a=summary
 
 Package: mp3splt-gtk
 Architecture: any
-Depends: libmp3splt-mp3 | libmp3splt-plugin, ${misc:Depends}, ${shlibs:Depends}
-Recommends: gstreamer0.10-plugins-good
-Suggests: audacious
+Depends: ${shlibs:Depends}, ${misc:Depends}, libmp3splt0-mp3 | libmp3splt0-plugin
+Recommends: libmp3splt0-mp3, libmp3splt0-ogg, gstreamer0.10-plugins-good
+Suggests: mp3splt, audacious
 Description: GTK interface to split MP3 and Ogg Vorbis files without reencoding
  Mp3Splt-project is a utility to split mp3 and ogg files selecting a
  begin and an end time position, without decoding. It's very useful to
@@ -35,7 +24,7 @@ Description: GTK interface to split MP3 and Ogg Vorbis files without reencoding
  automatic silence split, that can be used also to adjust cddb/cue
  splitpoints. You can extract tracks from Mp3Wrap or AlbumWrap files in
  few seconds. For mp3 files, both ID3v1 & ID3v2 tags are
- supported. Mp3splt-project is split in 3 parts : libmp3splt, mp3splt
+ supported. Mp3splt-project is split in 3 parts: libmp3splt, mp3splt
  and mp3splt-gtk.
  .
  This package provides mp3splt-gtk, the graphical interface.
