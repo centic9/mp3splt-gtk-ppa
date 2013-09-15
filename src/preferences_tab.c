@@ -3,7 +3,7 @@
  * mp3splt-gtk -- utility based on mp3splt,
  *                for mp3/ogg splitting without decoding
  *
- * Copyright: (C) 2005-2011 Alexandru Munteanu
+ * Copyright: (C) 2005-2012 Alexandru Munteanu
  * Contact: io_fx@yahoo.fr
  *
  * http://mp3splt.sourceforge.net/
@@ -22,8 +22,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
+ * You should have received a copy of the GNU General Public License
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307,
  * USA.
  *
@@ -75,6 +75,7 @@ GtkWidget *output_label = NULL;
 
 //!choose the player box
 GtkWidget *player_combo_box = NULL;
+GtkWidget *player_refresh_rate_spinner = NULL;
 
 //!list where we stock the preferences combo box content
 GList *player_pref_list = NULL;
@@ -130,7 +131,9 @@ GtkWidget *sample_result_label = NULL;
 GtkWidget *extract_tags_box = NULL;
 //@}
 
+extern gint timeout_value;
 extern GtkWidget *player_box;
+extern GtkWidget *playlist_box;
 extern GtkWidget *queue_files_button;
 extern splt_state *the_state;
 extern gint selected_split_mode;
@@ -266,9 +269,12 @@ void save_preferences(GtkWidget *widget, gpointer data)
   //save_path
   g_key_file_set_string(my_key_file, "split", "save_path",
 			outputdirectory_get());
-  //default_player
-  g_key_file_set_integer(my_key_file, "player", "default_player", selected_player);
 
+  //player
+  g_key_file_set_integer(my_key_file, "player", "default_player", selected_player);
+  g_key_file_set_integer(my_key_file, "player", "refresh_rate",
+      gtk_spin_button_get_value_as_int(GTK_SPIN_BUTTON(player_refresh_rate_spinner)));
+ 
 #ifdef __WIN32__
   //language
   GString *selected_lang;
@@ -784,14 +790,14 @@ GtkWidget *create_pref_splitpoints_page()
   gtk_box_pack_start(GTK_BOX(general_hbox), scrolled_window, TRUE, TRUE, 0);
  
   //vertical box inside the horizontal box from the scrolled window
-  GtkWidget *inside_vbox = gtk_vbox_new(FALSE, 0);;
-  gtk_box_pack_start(GTK_BOX(inside_hbox), inside_vbox, TRUE, TRUE, 10);
+  GtkWidget *inside_vbox = gtk_vbox_new(FALSE, 0);
+  gtk_box_pack_start(GTK_BOX(inside_hbox), inside_vbox, TRUE, TRUE, 5);
  
   GtkWidget *dir_box = create_directory_box();
-  gtk_box_pack_start(GTK_BOX(inside_vbox), dir_box, FALSE, FALSE, 10);
+  gtk_box_pack_start(GTK_BOX(inside_vbox), dir_box, FALSE, FALSE, 2);
 
   GtkWidget *split_options_box = create_split_options_box();
-  gtk_box_pack_start(GTK_BOX(inside_vbox), split_options_box, FALSE, FALSE, 2);
+  gtk_box_pack_start(GTK_BOX(inside_vbox), split_options_box, FALSE, FALSE, 1);
  
   return general_hbox;
 }
@@ -806,10 +812,13 @@ void player_combo_box_event(GtkComboBox *widget, gpointer data)
   if (selected_player == PLAYER_GSTREAMER)
   {
     hide_connect_button();
+    gtk_widget_show(playlist_box);
   }
   else
   {
     show_connect_button();
+    close_playlist_popup_window_event(NULL, NULL);
+    gtk_widget_hide(playlist_box);
   }
   
   gtk_widget_show(player_box);
@@ -818,12 +827,23 @@ void player_combo_box_event(GtkComboBox *widget, gpointer data)
   save_preferences(NULL, NULL);
 }
 
+void update_timeout_value(GtkWidget *refresh_rate_spinner, gpointer data)
+{
+  timeout_value = 
+    gtk_spin_button_get_value_as_int(GTK_SPIN_BUTTON(player_refresh_rate_spinner));
+
+  restart_player_timer();
+  save_preferences(NULL, NULL);
+}
+
 //!Create the box the player backend can be selected with
 GtkWidget *create_player_options_box()
 {
-  GtkWidget *horiz_fake = gtk_hbox_new(FALSE,0);
+  GtkWidget *vbox = gtk_vbox_new(FALSE, 0);
 
-  GtkWidget *label = gtk_label_new(_("Choose a player:"));
+  GtkWidget *horiz_fake = gtk_hbox_new(FALSE, 0);
+
+  GtkWidget *label = gtk_label_new(_("Player:"));
   gtk_box_pack_start(GTK_BOX(horiz_fake), label, FALSE, FALSE, 0);
 
   player_combo_box = GTK_WIDGET(ch_new_combo());
@@ -839,9 +859,33 @@ GtkWidget *create_player_options_box()
   g_signal_connect(G_OBJECT(player_combo_box), "changed",
       G_CALLBACK(player_combo_box_event), NULL);
 
-  gtk_box_pack_start(GTK_BOX(horiz_fake), player_combo_box, FALSE, FALSE, 12);
+  gtk_box_pack_start(GTK_BOX(horiz_fake), player_combo_box, FALSE, FALSE, 5);
+  gtk_box_pack_start(GTK_BOX(vbox), horiz_fake, FALSE, FALSE, 0);
+
+  //Player Splitpoints view refresh rate
+  horiz_fake = gtk_hbox_new(FALSE,0);
+
+  label = gtk_label_new(_("Refresh player every "));
+  gtk_box_pack_start(GTK_BOX(horiz_fake), label, FALSE, FALSE, 0);
+
+  GtkAdjustment *adj = (GtkAdjustment *) gtk_adjustment_new(0.0,
+      20, 1000, 10.0, 100.0, 0.0);
+  player_refresh_rate_spinner = gtk_spin_button_new(adj, 0, 0);
+  gtk_spin_button_set_wrap(GTK_SPIN_BUTTON(player_refresh_rate_spinner), TRUE);
+  g_signal_connect(G_OBJECT(player_refresh_rate_spinner), "value_changed",
+      G_CALLBACK(update_timeout_value), NULL);
+
+  gtk_box_pack_start(GTK_BOX(horiz_fake), player_refresh_rate_spinner, FALSE, FALSE, 5);
+  gtk_box_pack_start(GTK_BOX(horiz_fake), gtk_label_new(_("milliseconds.")), FALSE, FALSE, 3);
+  gtk_box_pack_start(GTK_BOX(vbox), horiz_fake, FALSE, FALSE, 5);
+
+  horiz_fake = gtk_hbox_new(FALSE,0);
+  gtk_box_pack_start(GTK_BOX(horiz_fake), 
+      gtk_label_new(_("Higher refresh rate decreases CPU usage - default is 200.")),
+      FALSE, FALSE, 0);
+  gtk_box_pack_start(GTK_BOX(vbox), horiz_fake, FALSE, FALSE, 5);
  
-  return wh_set_title_and_get_vbox(horiz_fake, _("<b>Player options</b>"));
+  return wh_set_title_and_get_vbox(vbox, _("<b>Player options</b>"));
 }
 
 //!creates the player preferences page
@@ -858,11 +902,11 @@ GtkWidget *create_pref_player_page()
   
   //vertical box inside the horizontal box from the scrolled window
   GtkWidget *vbox = gtk_vbox_new(FALSE, 0);;
-  gtk_box_pack_start(GTK_BOX(inside_hbox), vbox, TRUE, TRUE, 10);
+  gtk_box_pack_start(GTK_BOX(inside_hbox), vbox, TRUE, TRUE, 5);
   
   //choose player combo box
   GtkWidget *player_options_box = create_player_options_box();
-  gtk_box_pack_start(GTK_BOX(vbox), player_options_box, FALSE, FALSE, 10);
+  gtk_box_pack_start(GTK_BOX(vbox), player_options_box, FALSE, FALSE, 3);
  
   return player_hbox;
 }
@@ -938,10 +982,10 @@ GtkWidget *create_pref_output_page()
   gtk_box_pack_start(GTK_BOX(output_hbox), scrolled_window, TRUE, TRUE, 0);
  
   GtkWidget *vbox = gtk_vbox_new(FALSE, 0);;
-  gtk_box_pack_start(GTK_BOX(output_inside_hbox), vbox, TRUE, TRUE, 10);
+  gtk_box_pack_start(GTK_BOX(output_inside_hbox), vbox, TRUE, TRUE, 5);
 
   GtkWidget *output_fname_box = create_output_filename_box();
-  gtk_box_pack_start(GTK_BOX(vbox), output_fname_box, FALSE, FALSE, 10);
+  gtk_box_pack_start(GTK_BOX(vbox), output_fname_box, FALSE, FALSE, 2);
 
   return output_hbox;
 }
@@ -1229,13 +1273,13 @@ GtkWidget *create_pref_tags_page()
   gtk_box_pack_start(GTK_BOX(outside_vbox), scrolled_window, TRUE, TRUE, 0);
 
   GtkWidget *vbox = gtk_vbox_new(FALSE, 0);;
-  gtk_box_pack_start(GTK_BOX(inside_hbox), vbox, TRUE, TRUE, 10);
+  gtk_box_pack_start(GTK_BOX(inside_hbox), vbox, TRUE, TRUE, 5);
 
   GtkWidget *tags_version_box = create_tags_version_box();
-  gtk_box_pack_start(GTK_BOX(vbox), tags_version_box, FALSE, FALSE, 10);
+  gtk_box_pack_start(GTK_BOX(vbox), tags_version_box, FALSE, FALSE, 2);
 
   GtkWidget *tags_opts_box = create_tags_options_box();
-  gtk_box_pack_start(GTK_BOX(vbox), tags_opts_box, FALSE, FALSE, 0);
+  gtk_box_pack_start(GTK_BOX(vbox), tags_opts_box, FALSE, FALSE, 1);
   
   return outside_vbox;
 }

@@ -3,7 +3,7 @@
  * mp3splt-gtk -- utility based on mp3splt,
  *                for mp3/ogg splitting without decoding
  *
- * Copyright: (C) 2005-2011 Alexandru Munteanu
+ * Copyright: (C) 2005-2012 Alexandru Munteanu
  * Contact: io_fx@yahoo.fr
  *
  * http://mp3splt.sourceforge.net/
@@ -42,7 +42,7 @@
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #else
-#define VERSION "0.7.1"
+#define VERSION "0.7.2"
 #define PACKAGE_NAME "mp3splt-gtk"
 #endif
 
@@ -248,8 +248,8 @@ void initialize_window()
   gtk_drag_dest_set(window, GTK_DEST_DEFAULT_MOTION | GTK_DEST_DEFAULT_DROP,
       drop_types, 3, GDK_ACTION_COPY | GDK_ACTION_MOVE);
  
-  GString *Imagefile = g_string_new(PIXMAP_PATH);
-  build_svg_path(Imagefile, "mp3splt-gtk_ico"ICON_EXT);
+  GString *Imagefile = g_string_new("");
+  build_path(Imagefile, PIXMAP_PATH, "mp3splt-gtk_ico"ICON_EXT);
   GdkPixbuf *pixbuf = gdk_pixbuf_new_from_file(Imagefile->str, NULL);
   gtk_window_set_default_icon(pixbuf);
   g_string_free(Imagefile, TRUE);
@@ -328,10 +328,11 @@ void about_window(GtkWidget *widget, gpointer *data)
 {
   GtkWidget *dialog = gtk_about_dialog_new();
 
-  //for the bitmap
-  GdkPixbuf *pixbuf = gdk_pixbuf_new_from_file (PIXMAP_PATH"mp3splt-gtk.png",
-      NULL);
+  GString *Imagefile = g_string_new("");
+  build_path(Imagefile, PIXMAP_PATH, "mp3splt-gtk.png");
+  GdkPixbuf *pixbuf = gdk_pixbuf_new_from_file(Imagefile->str, NULL);
   gtk_about_dialog_set_logo(GTK_ABOUT_DIALOG(dialog), pixbuf);
+  g_string_free(Imagefile, TRUE);
   
   gtk_about_dialog_set_program_name(GTK_ABOUT_DIALOG(dialog), (gchar *)PACKAGE_NAME);
   gtk_about_dialog_set_version(GTK_ABOUT_DIALOG(dialog), VERSION);
@@ -713,6 +714,7 @@ GtkWidget *create_main_vbox()
 
   //playlist control frame
   playlist_box = (GtkWidget *)create_player_playlist_frame();
+  gtk_box_pack_start(GTK_BOX(player_vbox), playlist_box, TRUE, TRUE, 0);
 
   gtk_notebook_append_page(GTK_NOTEBOOK(notebook), player_vbox,
       (GtkWidget *)notebook_label);
@@ -724,9 +726,8 @@ GtkWidget *create_main_vbox()
                            (GtkWidget *)notebook_label);
 
   /* split files frame */
-  GtkWidget *split_files_vbox;
-  split_files_vbox = gtk_vbox_new (FALSE, 0);
-  gtk_container_set_border_width (GTK_CONTAINER (split_files_vbox), 0);
+  GtkWidget *split_files_vbox = gtk_vbox_new (FALSE, 0);
+  gtk_container_set_border_width(GTK_CONTAINER(split_files_vbox), 0);
   
   frame = (GtkWidget *)create_split_files();
   gtk_container_add(GTK_CONTAINER(split_files_vbox), frame);
@@ -769,46 +770,36 @@ GtkWidget *create_main_vbox()
   gtk_container_add(GTK_CONTAINER(preferences_vbox), frame);
 
   notebook_label = gtk_label_new((gchar *)_("Preferences"));
-  gtk_notebook_append_page(GTK_NOTEBOOK(notebook), 
-                           preferences_vbox,
+  gtk_notebook_append_page(GTK_NOTEBOOK(notebook), preferences_vbox,
                            (GtkWidget *)notebook_label);
   
   /* progress bar */
   percent_progress_bar = gtk_progress_bar_new();
-  //we begin at 0
-  gtk_progress_bar_set_fraction(GTK_PROGRESS_BAR(percent_progress_bar),
-                                0.0);
-  //we write 0 on the bar
-  gtk_progress_bar_set_text(GTK_PROGRESS_BAR(percent_progress_bar),
-                            "");
-  
-  //hbox for progress bar and cancel button
-  GtkWidget *hbox;
-  hbox = gtk_hbox_new (FALSE,0);
-  //we put the progress bar in the hbox
-  gtk_box_pack_start(GTK_BOX(hbox), percent_progress_bar, TRUE, TRUE, 3);
-  
+  gtk_progress_bar_set_fraction(GTK_PROGRESS_BAR(percent_progress_bar), 0.0);
+  gtk_progress_bar_set_text(GTK_PROGRESS_BAR(percent_progress_bar), "");
+
+#if GTK_MAJOR_VERSION >= 3
+  gtk_progress_bar_set_show_text(GTK_PROGRESS_BAR(percent_progress_bar), TRUE);
+#endif
+
+  GtkWidget *hbox = gtk_hbox_new (FALSE, 0);
+  gtk_box_pack_start(GTK_BOX(hbox), percent_progress_bar, TRUE, TRUE, 0);
+
   //stop button
   cancel_button = create_cool_button(GTK_STOCK_CANCEL,_("S_top"), FALSE);
-  //action for the cancel button
   g_signal_connect(G_OBJECT(cancel_button), "clicked",
                    G_CALLBACK(cancel_button_event), NULL);
-  
-  //we put the stop button in the hbox
+
   gtk_box_pack_start(GTK_BOX(hbox), cancel_button, FALSE, TRUE, 3);
   gtk_widget_set_sensitive(GTK_WIDGET(cancel_button), FALSE);
-  
-  //we put progress bar hbox in the main box
-  gtk_box_pack_start(GTK_BOX(main_vbox), hbox, FALSE, FALSE, 3);  
+
+  gtk_box_pack_start(GTK_BOX(main_vbox), hbox, FALSE, FALSE, 2);
 
   /* show messages history dialog */
   create_mess_history_dialog();
  
   /* statusbar */
   status_bar = gtk_statusbar_new();
-
-  //TODO: gtk+ >= 3
-  //gtk_statusbar_set_has_resize_grip(GTK_STATUSBAR(status_bar), FALSE);
 
   GtkWidget *mess_history_button =
     create_cool_button(GTK_STOCK_INFO, NULL, FALSE);
@@ -862,17 +853,16 @@ void create_all()
   
   load_preferences();
 
-  if (selected_player == PLAYER_GSTREAMER)
-  {
-    hide_connect_button();
-  }
-
-  hide_disconnect_button();
-  gtk_widget_hide(playlist_box);
-
   move_and_resize_main_window();
 
   gtk_widget_show_all(window);
+
+  if (selected_player != PLAYER_GSTREAMER)
+  {
+    gtk_widget_hide(playlist_box);
+  }
+
+  hide_freedb_spinner();
 }
 
 /*!Output an error message from libmp3splt to the status bar

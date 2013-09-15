@@ -3,7 +3,7 @@
  * mp3splt-gtk -- utility based on mp3splt,
  *                for mp3/ogg splitting without decoding
  *
- * Copyright: (C) 2005-2011 Alexandru Munteanu
+ * Copyright: (C) 2005-2012 Alexandru Munteanu
  * Contact: io_fx@yahoo.fr
  *
  * http://mp3splt.sourceforge.net/
@@ -216,8 +216,7 @@ void update_add_button()
 }
 
 //!updates the minutes from the spinner
-void update_minutes_from_spinner( GtkWidget *widget,
-                                  gpointer   data )
+void update_minutes_from_spinner(GtkWidget *widget, gpointer data)
 {
   spin_mins = 
     gtk_spin_button_get_value_as_int(GTK_SPIN_BUTTON(spinner_minutes));
@@ -1125,7 +1124,6 @@ void add_splitpoint(Split_point my_split_point,
     g_snprintf(current_description, 255, "%s", _("description here"));
   }
   
-  //
   update_add_button();
   refresh_drawing_area();
   check_update_down_progress_bar();
@@ -1289,8 +1287,7 @@ void create_trim_silence_window(GtkWidget *button, gpointer *data)
   gtk_box_pack_start(GTK_BOX(general_inside_vbox), horiz_fake, FALSE, FALSE, 10);
   
   //vertical parameter box
-  GtkWidget *param_vbox;
-  param_vbox = gtk_vbox_new(FALSE,0);
+  GtkWidget *param_vbox = gtk_vbox_new(FALSE,0);
   gtk_box_pack_start(GTK_BOX(horiz_fake), param_vbox, FALSE, FALSE, 25);
   
   //horizontal box fake for threshold level
@@ -1555,7 +1552,7 @@ void remove_row(GtkWidget *widget, gpointer data)
 }
 
 //!removes all rows from the table
-void remove_all_rows (GtkWidget *widget, gpointer data)
+void remove_all_rows(GtkWidget *widget, gpointer data)
 {
   GtkTreeIter iter;
   GtkTreeModel *model;
@@ -1591,60 +1588,43 @@ void remove_all_rows (GtkWidget *widget, gpointer data)
 //!creates and and initialise a spinner
 GtkWidget *create_init_spinner(GtkWidget *bottomhbox1, 
                                gint min, gint max, 
-                               gchar *label_text,
-                               gint type)
+                               gchar *label_text, gint type)
 {
-  //the spinner
-  GtkWidget *spinner;
-  //the adjustment
-  GtkAdjustment *adj;
-  //vertical box for the label
-  GtkWidget *spinner_box;
-  //spinner label
-  GtkWidget *label;
+  GtkWidget *spinner_box = gtk_vbox_new(FALSE, 0); 
+  GtkWidget *label = gtk_label_new(label_text);
+  gtk_box_pack_start(GTK_BOX(spinner_box), label, TRUE, FALSE, 0);
 
-  spinner_box = gtk_vbox_new (FALSE, 0); 
-  label = gtk_label_new (label_text);
-  //adds label to spinner box
-  gtk_box_pack_start (GTK_BOX (spinner_box), label, TRUE, FALSE, 0);
-  adj = (GtkAdjustment *) gtk_adjustment_new (0.0, min, max, 1.0,
-                                              10.0, 0.0);
-  spinner = gtk_spin_button_new (adj, 0, 0);
-  gtk_spin_button_set_wrap (GTK_SPIN_BUTTON (spinner), TRUE);
+  GtkAdjustment *adj =
+    (GtkAdjustment *) gtk_adjustment_new(0.0, min, max, 1.0, 10.0, 0.0);
+  GtkWidget *spinner = gtk_spin_button_new(adj, 0, 0);
+  gtk_spin_button_set_wrap(GTK_SPIN_BUTTON(spinner), TRUE);
 
-  //0 means minutes
   if (type == 0)
-    {
-      g_signal_connect (G_OBJECT (spinner), "value_changed",
-                        G_CALLBACK (update_minutes_from_spinner), NULL);
-    }
-  else 
-    //1 means seconds
-    if (type == 1)
-      {
-        g_signal_connect (G_OBJECT (spinner), "value_changed",
-                          G_CALLBACK (update_seconds_from_spinner), NULL);
-      }
-    else
-      {
-        g_signal_connect (G_OBJECT (spinner), "value_changed",
-                          G_CALLBACK (update_hundr_secs_from_spinner), NULL);
-      }
-  
-  //adds spinner to the spinner box
-  gtk_box_pack_start (GTK_BOX (spinner_box), spinner, TRUE, FALSE, 0);
-  //adds spinner box to the horizontal box1
-  gtk_box_pack_start (GTK_BOX (bottomhbox1), spinner_box, TRUE, FALSE, 5);
-  
+  {
+    g_signal_connect(G_OBJECT(spinner), "value_changed",
+        G_CALLBACK(update_minutes_from_spinner), NULL);
+  }
+  else if (type == 1)
+  {
+    g_signal_connect(G_OBJECT(spinner), "value_changed",
+        G_CALLBACK(update_seconds_from_spinner), NULL);
+  }
+  else
+  {
+    g_signal_connect(G_OBJECT(spinner), "value_changed",
+        G_CALLBACK(update_hundr_secs_from_spinner), NULL);
+  }
+
+  gtk_box_pack_start(GTK_BOX(spinner_box), spinner, TRUE, FALSE, 0);
+  gtk_box_pack_start(GTK_BOX(bottomhbox1), spinner_box, FALSE, FALSE, 5);
+
   return spinner;
 }
 
 //!minutes ,seconds spinners ; add, delete buttons
 GtkWidget *create_init_spinners_buttons(GtkTreeView *tree_view)
 {
-  GtkWidget *hbox;
-
-  hbox = gtk_hbox_new (FALSE, 0);
+  GtkWidget *hbox = gtk_hbox_new (FALSE, 0);
   gtk_container_set_border_width (GTK_CONTAINER (hbox), 0);
 
   /* minutes and seconds spinners */
@@ -1672,7 +1652,7 @@ GtkWidget *create_init_spinners_buttons(GtkTreeView *tree_view)
   gtk_widget_set_sensitive(GTK_WIDGET(add_button), TRUE);
   g_signal_connect(G_OBJECT(add_button), "clicked",
                     G_CALLBACK(add_row_clicked), tree_view);
-  gtk_box_pack_start (GTK_BOX (hbox), add_button, TRUE, FALSE, 5);
+  gtk_box_pack_start (GTK_BOX (hbox), add_button, FALSE, FALSE, 5);
   gtk_widget_set_tooltip_text(add_button,_("Add splitpoint"));
 
   /* remove row button */
@@ -1682,7 +1662,7 @@ GtkWidget *create_init_spinners_buttons(GtkTreeView *tree_view)
   gtk_widget_set_sensitive(GTK_WIDGET(remove_row_button), FALSE);
   g_signal_connect (G_OBJECT (remove_row_button), "clicked",
                     G_CALLBACK (remove_row), tree_view);
-  gtk_box_pack_start (GTK_BOX (hbox), remove_row_button, TRUE, FALSE, 5);
+  gtk_box_pack_start (GTK_BOX (hbox), remove_row_button, FALSE, FALSE, 5);
   gtk_widget_set_tooltip_text(remove_row_button, _("Remove rows"));
 
   /* remove all rows button */
@@ -1692,7 +1672,7 @@ GtkWidget *create_init_spinners_buttons(GtkTreeView *tree_view)
   gtk_widget_set_sensitive(GTK_WIDGET(remove_all_button), FALSE);
   g_signal_connect (G_OBJECT (remove_all_button), "clicked",
                     G_CALLBACK (remove_all_rows), tree_view);
-  gtk_box_pack_start (GTK_BOX (hbox), remove_all_button, TRUE, FALSE, 5);
+  gtk_box_pack_start (GTK_BOX (hbox), remove_all_button, FALSE, FALSE, 5);
   gtk_widget_set_tooltip_text(remove_all_button, _("Remove all rows"));
 
   return hbox;
@@ -1701,20 +1681,8 @@ GtkWidget *create_init_spinners_buttons(GtkTreeView *tree_view)
 //!special buttons like 'set silence from silence detection'
 GtkWidget *create_init_special_buttons(GtkTreeView *tree_view)
 {
-  GtkWidget *hbox;
-
-  hbox = gtk_hbox_new (FALSE, 0);
-  gtk_container_set_border_width (GTK_CONTAINER (hbox), 0);
-
-  /* set splitpoints from silence detection */
-  scan_silence_button =
-    (GtkWidget *)create_cool_button(GTK_STOCK_ADD, _("_Silence detection"), FALSE);
-  gtk_widget_set_sensitive(GTK_WIDGET(scan_silence_button), TRUE);
-  g_signal_connect(G_OBJECT(scan_silence_button), "clicked",
-      G_CALLBACK(create_detect_silence_and_add_splitpoints_window), NULL);
-  gtk_box_pack_end(GTK_BOX(hbox), scan_silence_button, FALSE, FALSE, 5);
-  gtk_widget_set_tooltip_text(scan_silence_button,
-      _("Set splitpoints from silence detection"));
+  GtkWidget *hbox = gtk_hbox_new(FALSE, 0);
+  gtk_container_set_border_width(GTK_CONTAINER(hbox), 0);
 
   /* set splitpoints from trim silence detection */
   scan_trim_silence_button =
@@ -1722,9 +1690,19 @@ GtkWidget *create_init_special_buttons(GtkTreeView *tree_view)
   gtk_widget_set_sensitive(GTK_WIDGET(scan_trim_silence_button), TRUE);
   g_signal_connect(G_OBJECT(scan_trim_silence_button), "clicked",
       G_CALLBACK(create_trim_silence_window), NULL);
-  gtk_box_pack_end(GTK_BOX(hbox), scan_trim_silence_button, FALSE, FALSE, 5);
+  gtk_box_pack_start(GTK_BOX(hbox), scan_trim_silence_button, FALSE, FALSE, 5);
   gtk_widget_set_tooltip_text(scan_trim_silence_button,
       _("Set trim splitpoints using silence detection"));
+
+  /* set splitpoints from silence detection */
+  scan_silence_button =
+    (GtkWidget *)create_cool_button(GTK_STOCK_ADD, _("_Silence detection"), FALSE);
+  gtk_widget_set_sensitive(GTK_WIDGET(scan_silence_button), TRUE);
+  g_signal_connect(G_OBJECT(scan_silence_button), "clicked",
+      G_CALLBACK(create_detect_silence_and_add_splitpoints_window), NULL);
+  gtk_box_pack_start(GTK_BOX(hbox), scan_silence_button, FALSE, FALSE, 5);
+  gtk_widget_set_tooltip_text(scan_silence_button,
+      _("Set splitpoints from silence detection"));
 
   return hbox;
 }
@@ -1845,10 +1823,8 @@ gpointer split_preview(gpointer data)
 
     if (confirmation > 0)
     {
-      gtk_progress_bar_set_fraction(GTK_PROGRESS_BAR(percent_progress_bar),
-          1.0);
-      gtk_progress_bar_set_text(GTK_PROGRESS_BAR(percent_progress_bar),
-          _(" finished"));
+      gtk_progress_bar_set_fraction(GTK_PROGRESS_BAR(percent_progress_bar), 1.0);
+      gtk_progress_bar_set_text(GTK_PROGRESS_BAR(percent_progress_bar), _(" finished"));
     }
 
     if (fname_path)
@@ -2163,23 +2139,9 @@ buttons
 */
 GtkWidget *create_choose_splitpoints_frame(GtkTreeView *tree_view)
 {
-  //choose splitpoints box, has tree, spinner, arrows..
-  GtkWidget *choose_splitpoints_vbox = NULL;
-  //scrolled window used for the tree
-  GtkWidget *scrolled_window = NULL;
-  //spinners + add and remove buttons box
-  GtkWidget *spinners_buttons_hbox = NULL;
-  //horizontal box for tree and arrows
-  GtkWidget *tree_hbox = NULL;
-  //special buttons like 'Add splitpoints from silence detection'
-  GtkWidget *special_buttons_hbox = NULL;
-
-  /* the tree */
-  GtkTreeSelection *selection = NULL;
-
   /* choose splitpoins vbox */
-  choose_splitpoints_vbox = gtk_vbox_new (FALSE, 0);
-  gtk_container_set_border_width (GTK_CONTAINER (choose_splitpoints_vbox), 0);
+  GtkWidget *choose_splitpoints_vbox = gtk_vbox_new(FALSE, 0);
+  gtk_container_set_border_width(GTK_CONTAINER(choose_splitpoints_vbox), 0);
 
   /* handle box for detaching */
   handle_box = gtk_handle_box_new();
@@ -2190,32 +2152,32 @@ GtkWidget *create_choose_splitpoints_frame(GtkTreeView *tree_view)
                    NULL);
 
   /* spinner buttons hbox */
-  spinners_buttons_hbox = create_init_spinners_buttons(tree_view);
-  gtk_box_pack_start (GTK_BOX (choose_splitpoints_vbox), spinners_buttons_hbox, FALSE, FALSE, 7);
+  GtkWidget *spinners_buttons_hbox = create_init_spinners_buttons(tree_view);
+  gtk_box_pack_start(GTK_BOX(choose_splitpoints_vbox), spinners_buttons_hbox, FALSE, FALSE, 3);
   
   /* horizontal box for the tree */
-  tree_hbox = gtk_hbox_new (FALSE, 0);
+  GtkWidget *tree_hbox = gtk_hbox_new (FALSE, 0);
   gtk_box_pack_start (GTK_BOX (choose_splitpoints_vbox), tree_hbox, TRUE, TRUE, 0);
 
   /* scrolled window for the tree */
-  scrolled_window = gtk_scrolled_window_new (NULL, NULL);
+  GtkWidget *scrolled_window = gtk_scrolled_window_new (NULL, NULL);
   gtk_scrolled_window_set_shadow_type (GTK_SCROLLED_WINDOW(scrolled_window), GTK_SHADOW_NONE);
   gtk_scrolled_window_set_policy (GTK_SCROLLED_WINDOW (scrolled_window),
                                   GTK_POLICY_AUTOMATIC,
                                   GTK_POLICY_AUTOMATIC);
-  gtk_box_pack_start (GTK_BOX (tree_hbox), scrolled_window, TRUE, TRUE, 0);
+  gtk_box_pack_start(GTK_BOX(tree_hbox), scrolled_window, TRUE, TRUE, 0);
 
   //get the selection
-  selection = gtk_tree_view_get_selection (GTK_TREE_VIEW (tree_view));
+  GtkTreeSelection *selection = gtk_tree_view_get_selection (GTK_TREE_VIEW (tree_view));
   gtk_tree_selection_set_mode(selection, GTK_SELECTION_MULTIPLE);
   //create columns
-  create_columns (tree_view);
+  create_columns(tree_view);
   //add the tree to the scrolled window
-  gtk_container_add (GTK_CONTAINER (scrolled_window), GTK_WIDGET(tree_view));
+  gtk_container_add(GTK_CONTAINER(scrolled_window), GTK_WIDGET(tree_view));
 
   /* special buttons like 'set silence from silence detection' */
-  special_buttons_hbox = create_init_special_buttons(tree_view);
-  gtk_box_pack_start(GTK_BOX(choose_splitpoints_vbox), special_buttons_hbox, FALSE, FALSE, 7);
+  GtkWidget *special_buttons_hbox = create_init_special_buttons(tree_view);
+  gtk_box_pack_start(GTK_BOX(choose_splitpoints_vbox), special_buttons_hbox, FALSE, FALSE, 2);
 
   return handle_box;
 }
