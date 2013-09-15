@@ -3,8 +3,8 @@
  * mp3splt-gtk -- utility based on mp3splt,
  *                for mp3/ogg splitting without decoding
  *
- * Copyright: (C) 2005-2012 Alexandru Munteanu
- * Contact: io_fx@yahoo.fr
+ * Copyright: (C) 2005-2013 Alexandru Munteanu
+ * Contact: m@ioalex.net
  *
  * http://mp3splt.sourceforge.net/
  *
@@ -24,7 +24,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307,
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301,
  * USA.
  *
  *********************************************************/
@@ -37,9 +37,10 @@
 
 #include "radio_helper.h"
 
+static GtkRadioButton *rh_get_radio_from_value(GtkWidget *radio_button, gint value);
+
 GtkWidget *rh_append_radio_to_vbox(GtkWidget *radio_button, const gchar *text,
-    gint value,
-    void (*callback)(GtkToggleButton *, gpointer),
+    gint value, void (*callback)(GtkToggleButton *, gpointer), gpointer callback_data, 
     GtkWidget *vbox)
 {
   GtkWidget *new_radio_button =
@@ -49,7 +50,7 @@ GtkWidget *rh_append_radio_to_vbox(GtkWidget *radio_button, const gchar *text,
   if (callback)
   {
     g_signal_connect(GTK_TOGGLE_BUTTON(new_radio_button), "toggled", G_CALLBACK(callback),
-        NULL);
+        callback_data);
   }
 
   g_object_set_data(G_OBJECT(new_radio_button), "value", GINT_TO_POINTER(value));
@@ -76,23 +77,29 @@ gint rh_get_active_value(GtkWidget *radio_button)
   return active_value;
 }
 
-GtkWidget *rh_get_radio_from_value(GtkWidget *radio_button, gint value)
+void rh_set_radio_value(GtkWidget *radio_button, gint key_value, gboolean value)
 {
-  GtkWidget *radio = NULL;
+  GtkRadioButton *radio = rh_get_radio_from_value(radio_button, key_value);
+  gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(radio), value);
+}
+
+static GtkRadioButton *rh_get_radio_from_value(GtkWidget *radio_button, gint value)
+{
   GSList *radio_button_list = gtk_radio_button_get_group(GTK_RADIO_BUTTON(radio_button));
 
   gint i = 0;
-  for(i = 0; i < g_slist_length(radio_button_list);i++)
+  gint list_length = g_slist_length(radio_button_list);
+  for(i = 0; i < list_length;i++)
   {
     GtkRadioButton *current_radio = (GtkRadioButton *) g_slist_nth_data(radio_button_list, i);
     gint current_value = GPOINTER_TO_INT(g_object_get_data(G_OBJECT(current_radio), "value"));
     if (current_value == value)
     {
-      radio = GTK_WIDGET(current_radio);
+      return current_radio;
       break;
     }
   }
 
-  return radio;
+  return NULL;
 }
 

@@ -3,8 +3,8 @@
  * mp3splt-gtk -- utility based on mp3splt,
  *                for mp3/ogg splitting without decoding
  *
- * Copyright: (C) 2005-2012 Alexandru Munteanu
- * Contact: io_fx@yahoo.fr
+ * Copyright: (C) 2005-2013 Alexandru Munteanu
+ * Contact: m@ioalex.net
  *
  * http://mp3splt.sourceforge.net/
  *
@@ -24,7 +24,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307,
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301,
  * USA.
  *
  *********************************************************/
@@ -36,18 +36,20 @@
  *
  *********************************************************/
 
-#ifndef _MP3SPLT_GTK_H
-#define _MP3SPLT_GTK_H
+#ifndef MP3SPLT_GTK_H
+#define MP3SPLT_GTK_H
 
-void put_options_from_preferences();
-gpointer split_it(gpointer data);
-void sigpipe_handler(gint sig);
+#include "all_includes.h"
 
-GThread *create_thread(GThreadFunc func, gpointer data,
-		gboolean joinable, GError **error);
+void split_action(ui_state *ui);
+GThread *create_thread(GThreadFunc func, ui_state *ui);
+GThread *create_thread_with_fname(GThreadFunc func, ui_with_fname *ui_fname);
 void enter_threads();
 void exit_threads();
+gboolean exit_application(GtkWidget *widget, GdkEvent  *event, gpointer data);
+void exit_application_bis(GtkWidget *widget, gpointer data);
 
-#define MP3SPLT_GTK_DATE "13/05/12"
+#define MP3SPLT_GTK_DATE "20/07/13"
 
 #endif
+

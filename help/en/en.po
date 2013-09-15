@@ -1,7 +1,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
-"POT-Creation-Date: 2010-12-17 23:00+0100\n"
+"POT-Creation-Date: 2012-09-12 22:53+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -266,54 +266,74 @@ msgid "Go to the <guilabel>Batch Processing</guilabel> tab and add all files you
 msgstr ""
 
 #: /home/ion/hacking/mp3splt-project/mp3splt-project/trunk/mp3splt-gtk/help/C/mp3splt-gtk.xml:293(title)
+msgid "Saving and resuming your work"
+msgstr ""
+
+#: /home/ion/hacking/mp3splt-project/mp3splt-project/trunk/mp3splt-gtk/help/C/mp3splt-gtk.xml:294(para)
+msgid "mp3splt-gtk contains an export feature that saves the current project's state as a cue file. This cue file can later be re-opened by mp3splt-gtk or be used by any cd burner or other application that can read cue files."
+msgstr ""
+
+#: /home/ion/hacking/mp3splt-project/mp3splt-project/trunk/mp3splt-gtk/help/C/mp3splt-gtk.xml:300(para)
+msgid "If the cue file is used in a different application than mp3splt-gtk there is one feature that most probably won't work, though:"
+msgstr ""
+
+#: /home/ion/hacking/mp3splt-project/mp3splt-project/trunk/mp3splt-gtk/help/C/mp3splt-gtk.xml:305(para)
+msgid "The cue standard does provide commentary fields that allow applications to store private data (which we use for to remember which part of the file is not to be output). But since there is no standartized way to exclude parts of a file from the CD burning process other applications most probably won't know if you want to do so."
+msgstr ""
+
+#: /home/ion/hacking/mp3splt-project/mp3splt-project/trunk/mp3splt-gtk/help/C/mp3splt-gtk.xml:313(para)
+msgid "To export the current split points as a cue file press <menuchoice><guimenu>File</guimenu><guimenuitem>Export Splitpoints</guimenuitem></menuchoice>"
+msgstr ""
+
+#: /home/ion/hacking/mp3splt-project/mp3splt-project/trunk/mp3splt-gtk/help/C/mp3splt-gtk.xml:320(title)
 msgid "Troubleshooting"
 msgstr ""
 
-#: /home/ion/hacking/mp3splt-project/mp3splt-project/trunk/mp3splt-gtk/help/C/mp3splt-gtk.xml:295(title)
+#: /home/ion/hacking/mp3splt-project/mp3splt-project/trunk/mp3splt-gtk/help/C/mp3splt-gtk.xml:322(title)
 msgid "The player won't start"
 msgstr ""
 
-#: /home/ion/hacking/mp3splt-project/mp3splt-project/trunk/mp3splt-gtk/help/C/mp3splt-gtk.xml:296(para)
+#: /home/ion/hacking/mp3splt-project/mp3splt-project/trunk/mp3splt-gtk/help/C/mp3splt-gtk.xml:323(para)
 msgid "If the player won't start even if the play button is pressed try starting the player independently from mp3splt-gtk and pressing play thereafter."
 msgstr ""
 
-#: /home/ion/hacking/mp3splt-project/mp3splt-project/trunk/mp3splt-gtk/help/C/mp3splt-gtk.xml:301(para)
+#: /home/ion/hacking/mp3splt-project/mp3splt-project/trunk/mp3splt-gtk/help/C/mp3splt-gtk.xml:328(para)
 msgid "mp3splt-gtk knows how to remote-control SnackAmp and Audacious to automatically switch to the file that is about to be split."
 msgstr ""
 
-#: /home/ion/hacking/mp3splt-project/mp3splt-project/trunk/mp3splt-gtk/help/C/mp3splt-gtk.xml:307(title)
+#: /home/ion/hacking/mp3splt-project/mp3splt-project/trunk/mp3splt-gtk/help/C/mp3splt-gtk.xml:334(title)
 msgid "Splitting doesn't work"
 msgstr ""
 
-#: /home/ion/hacking/mp3splt-project/mp3splt-project/trunk/mp3splt-gtk/help/C/mp3splt-gtk.xml:308(para)
+#: /home/ion/hacking/mp3splt-project/mp3splt-project/trunk/mp3splt-gtk/help/C/mp3splt-gtk.xml:335(para)
 msgid "Try to make sure that the version of libmp3splt is installed correspondends to the version of mp3splt-gtk. Even if (for newer versions of the program) the configure script makes sure that both versions match it might still be possible to have the wrong combination of these elements installed on the same system."
 msgstr ""
 
-#: /home/ion/hacking/mp3splt-project/mp3splt-project/trunk/mp3splt-gtk/help/C/mp3splt-gtk.xml:316(para)
+#: /home/ion/hacking/mp3splt-project/mp3splt-project/trunk/mp3splt-gtk/help/C/mp3splt-gtk.xml:343(para)
 msgid "If that is the case make sure that in the <guilabel>File mode</guilabel> tab of the <guilabel>Type of split</guilabel> tab <guilabel>Single file</guilabel> mode is selected."
 msgstr ""
 
-#: /home/ion/hacking/mp3splt-project/mp3splt-project/trunk/mp3splt-gtk/help/C/mp3splt-gtk.xml:323(title)
+#: /home/ion/hacking/mp3splt-project/mp3splt-project/trunk/mp3splt-gtk/help/C/mp3splt-gtk.xml:350(title)
 msgid "Splitting a certain Ogg file doesn't work"
 msgstr ""
 
-#: /home/ion/hacking/mp3splt-project/mp3splt-project/trunk/mp3splt-gtk/help/C/mp3splt-gtk.xml:324(para)
+#: /home/ion/hacking/mp3splt-project/mp3splt-project/trunk/mp3splt-gtk/help/C/mp3splt-gtk.xml:351(para)
 msgid "Next to the lossy ogg vorbis format that gives good compression while keeping file sizes extremely low there are other file formats that can be kept inside an ogg container as well, notably ogg flac."
 msgstr ""
 
-#: /home/ion/hacking/mp3splt-project/mp3splt-project/trunk/mp3splt-gtk/help/C/mp3splt-gtk.xml:330(para)
+#: /home/ion/hacking/mp3splt-project/mp3splt-project/trunk/mp3splt-gtk/help/C/mp3splt-gtk.xml:357(para)
 msgid "Flac is a completely lossless codec which means that the output files are sonewhat larger than Ogg vorbis ones but these files can be cut on any information without loosing any quality."
 msgstr ""
 
-#: /home/ion/hacking/mp3splt-project/mp3splt-project/trunk/mp3splt-gtk/help/C/mp3splt-gtk.xml:336(para)
+#: /home/ion/hacking/mp3splt-project/mp3splt-project/trunk/mp3splt-gtk/help/C/mp3splt-gtk.xml:363(para)
 msgid "Since there is no direct need mp3splt-gtk still does not support cutting flac files."
 msgstr ""
 
-#: /home/ion/hacking/mp3splt-project/mp3splt-project/trunk/mp3splt-gtk/help/C/mp3splt-gtk.xml:342(title)
+#: /home/ion/hacking/mp3splt-project/mp3splt-project/trunk/mp3splt-gtk/help/C/mp3splt-gtk.xml:369(title)
 msgid "Adding a file to the files view doesn't work"
 msgstr ""
 
-#: /home/ion/hacking/mp3splt-project/mp3splt-project/trunk/mp3splt-gtk/help/C/mp3splt-gtk.xml:343(para)
+#: /home/ion/hacking/mp3splt-project/mp3splt-project/trunk/mp3splt-gtk/help/C/mp3splt-gtk.xml:370(para)
 msgid "Make sure that in the <guilabel>File mode</guilabel> tab of the <guilabel>Type of split</guilabel> tab <guilabel>Batch processing</guilabel> mode is selected."
 msgstr ""
 

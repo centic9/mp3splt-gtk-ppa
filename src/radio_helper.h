@@ -3,8 +3,8 @@
  * mp3splt-gtk -- utility based on mp3splt,
  *                for mp3/ogg splitting without decoding
  *
- * Copyright: (C) 2005-2012 Alexandru Munteanu
- * Contact: io_fx@yahoo.fr
+ * Copyright: (C) 2005-2013 Alexandru Munteanu
+ * Contact: m@ioalex.net
  *
  * http://mp3splt.sourceforge.net/
  *
@@ -24,22 +24,22 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307,
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301,
  * USA.
  *
  *********************************************************/
 
 #ifndef RADIO_HELPER_H
 
-#include <gtk/gtk.h>
+#define RADIO_HELPER_H
+
+#include "external_includes.h"
 
 GtkWidget *rh_append_radio_to_vbox(GtkWidget *radio_button, const gchar *text,
-    gint value,
-    void (*callback)(GtkToggleButton *, gpointer),
-    GtkWidget *vbox);
+    gint value, void (*callback)(GtkToggleButton *, gpointer),
+    gpointer callback_data, GtkWidget *vbox);
 gint rh_get_active_value(GtkWidget *radio_button);
-GtkWidget *rh_get_radio_from_value(GtkWidget *radio_button, gint value);
+void rh_set_radio_value(GtkWidget *radio_button, gint key_value, gboolean value);
 
-#define RADIO_HELPER_H
 #endif
 

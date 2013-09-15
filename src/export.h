@@ -4,7 +4,7 @@
  *                for mp3/ogg splitting without decoding
  *
  * Copyright: (C) 2005-2010 Alexandru Munteanu
- * Contact: io_fx@yahoo.fr
+ * Contact: m@ioalex.net
  *
  * http://mp3splt.sourceforge.net/
  *
@@ -24,15 +24,18 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307,
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301,
  * USA.
  *
  *********************************************************/
 
-#ifndef _EXPORT_H
-#define _EXPORT_H
-#include <gtk/gtk.h>
+#ifndef EXPORT_H
+#define EXPORT_H
 
-void export_file(const gchar* filename);
-void ChooseCueExportFile(GtkWidget *widget, gpointer data);
+#include "all_includes.h"
+
+void export_cue_file_in_configuration_directory(ui_state *ui);
+void export_cue_file_event(GtkWidget *widget, ui_state *ui);
+
 #endif
+

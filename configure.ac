@@ -4,7 +4,7 @@
 # *                for mp3/ogg splitting without decoding
 # *
 # * Copyright (c) 2002-2005 M. Trotta - <mtrotta@users.sourceforge.net>
-# * Copyright (c) 2005-2012 Munteanu Alexandru - io_fx@yahoo.fr
+# * Copyright (c) 2005-2013 Munteanu Alexandru - m@ioalex.net
 # *
 # * http://mp3splt.sourceforge.net
 # *
@@ -24,7 +24,7 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
-# Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+# Foundation, Inc., 51 Franklin Street, Fifth Floor Boston, MA 02110-1301, USA
 #
 # *********************************************************/
 
@@ -32,23 +32,22 @@
 # Basic initialisations 
 #################################################
 
+m4_define([minimum_libmp3splt_version],[0.9.0])
+
 AC_PREREQ(2.62)
-AC_INIT(mp3splt-gtk, 0.7.2, mp3splt.sf.net)
+AC_INIT(mp3splt-gtk, 0.9, mp3splt.sf.net)
 
 # tell autoconf where to put the temporary files and scripts
 # it generates. Seems to be more clean to put them into a subdir;
 # One of this files is gnome-doc-utils.make, which is needed to 
 # compile the help files.
 AC_CONFIG_AUX_DIR([build-aux])
-
 AC_CONFIG_MACRO_DIR([m4])
-
 # tell which file by being there indicates we are run from the
 # right directory
 AC_CONFIG_SRCDIR([src/mp3splt-gtk.c])
-
 # Initialize automake
-AM_INIT_AUTOMAKE(mp3splt-gtk, 0.7.2)
+AM_INIT_AUTOMAKE
 
 # Tell autoconf where to put the output file that contains all
 # definitions our C program will need
@@ -60,6 +59,7 @@ AM_MAINTAINER_MODE([enable])
 #################################################
 
 AC_PROG_CC
+AC_PROG_INSTALL
 
 # Include all m4 macros that have to do with the language C
 AC_LANG_C
@@ -68,6 +68,22 @@ AC_LANG_C
 AC_CHECK_HEADERS([unistd.h])
 AM_GNU_GETTEXT([external])
 AM_GNU_GETTEXT_VERSION([0.13.1])
+
+AC_DEFINE_UNQUOTED([LIBMP3SPLT_WITH_SONAME], "libmp3splt0", [libmp3splt with soname])
+
+#################################################################
+# Enable libtool, check for libltdl and define @LIBLTDL@ and @INCLTDL@
+#################################################################
+
+ifdef([LT_CONFIG_LTDL_DIR],
+      [ LT_CONFIG_LTDL_DIR([libltdl]) ],
+      [])
+
+ifdef([LT_INIT],
+      [ LT_INIT([win32-dll]) ],
+      [ AC_PROG_LIBTOOL ])
+
+AC_WITH_LTDL
 
 #################################################################
 # Check for the type of the host
@@ -113,6 +129,9 @@ AC_MSG_RESULT($HOST)
 
 #check for -lm
 AC_CHECK_LIB(m, pow, [ haslm="yes" ] , [ AC_MSG_ERROR([libm not found !]) ] )
+
+#check for -ltld
+AC_CHECK_LIB(ltdl, lt_dlopen, [ hasltdl="yes" ], [ AC_MSG_ERROR([libltdl not found - check libtool installation !]) ] ) 
 
 
 #################################################
@@ -195,11 +214,12 @@ fi
 #################################################
 #Check for libmp3splt
 
-MP3SPLT_CHECK(,[ AC_MSG_ERROR(libmp3splt version 0.7.2 needed :
+PKG_CHECK_MODULES([LIBMP3SPLT], [libmp3splt = minimum_libmp3splt_version],
+[],
+[ AC_MSG_ERROR(libmp3splt version minimum_libmp3splt_version needed :
 
 Download the latest version of libmp3splt at http://mp3splt.sourceforge.net/
 ) ])
-
 
 #################################################
 #Check for audacious
@@ -220,6 +240,7 @@ if test "x$enable_audacious" = xyes;then
     For GTK 2.x, you will need audacious < 3.0.
     You can force the GTK version using --enable-gtk3 and --disable-gtk3.
 ]) ])
+  PKG_CHECK_MODULES(DBUS_GLIB, dbus-glib-1)
 fi
 
 
@@ -297,13 +318,13 @@ AC_ARG_WITH([no_images_dir],
 AC_ARG_ENABLE(c-debug, [AC_HELP_STRING([--enable-c-debug],[ Enable debugging symbols. ]) ],
     [enable_c_debug=$enableval],[enable_c_debug="no"])
 if test "x$enable_c_debug" = xyes;then
-  CFLAGS="$CFLAGS -g"
+  CFLAGS="$CFLAGS -g -Wall"
 fi
 
-AC_ARG_ENABLE(optimise, [AC_HELP_STRING([--enable-optimise],[ Enable O2 optimise. ]) ],
+AC_ARG_ENABLE(optimise, [AC_HELP_STRING([--enable-optimise],[ Enable O3 optimise. ]) ],
     [enable_optimise=$enableval],[enable_optimise="no"])
 if test "x$enable_optimise" = xyes;then
-  CFLAGS="$CFLAGS -O2"
+  CFLAGS="$CFLAGS -O3"
 fi
 
 AC_ARG_ENABLE(extra-warnings, [AC_HELP_STRING([--enable-extra-warnings],[ Enable extra warnings. ]) ],
@@ -313,12 +334,36 @@ if test "x$enable_extra_warnings" = xyes;then
 fi
 
 
+#################################################################
+# Check for cutter
+#################################################################
+
+AM_CONDITIONAL(HAS_CUTTER, false)
+
+AC_ARG_ENABLE(cutter, [AC_HELP_STRING([--disable-cutter],[ Disable Cutter unit testing. ]) ],
+    [enable_cutter=$enableval],[enable_cutter="yes"])
+
+if test "x$enable_cutter" = xyes;then
+
+AC_CHECK_CUTTER
+
+cutter_command="no"
+AC_CHECK_FILE([$CUTTER], [cutter_command="yes"])
+
+if test "x$CUTTER" != x;then
+  if test "x$cutter_command" = xyes;then
+    AM_CONDITIONAL(HAS_CUTTER, true)
+  fi
+fi
+
+fi
+
+
 #################################################
 # Generate Makefiles
 #################################################
 
-AC_CONFIG_FILES([Makefile src/Makefile m4/Makefile po/Makefile.in doc/Makefile help/Makefile])
-
+AC_CONFIG_FILES([Makefile src/Makefile m4/Makefile po/Makefile.in doc/Makefile doc/Doxyfile_all help/Makefile test/Makefile])
 
 #################################################
 # Define some useful constants

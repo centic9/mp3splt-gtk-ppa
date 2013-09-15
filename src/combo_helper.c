@@ -1,10 +1,10 @@
 /**********************************************************
  *
  * mp3splt-gtk -- utility based on mp3splt,
- *                for mp3/ogg splitting without decoding
  *
- * Copyright: (C) 2005-2012 Alexandru Munteanu
- * Contact: io_fx@yahoo.fr
+ *                for mp3/ogg splitting without decoding
+ * Copyright: (C) 2005-2013 Alexandru Munteanu
+ * Contact: m@ioalex.net
  *
  * http://mp3splt.sourceforge.net/
  *
@@ -24,7 +24,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307,
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301,
  * USA.
  *
  *********************************************************/
@@ -106,10 +106,12 @@ void ch_set_active_str_value(GtkComboBox *combo, gchar *new_value)
     if (strcmp(value, new_value) == 0)
     {
       gtk_combo_box_set_active_iter(combo, &iter);
+      g_free(value);
       return;
     }
 
     valid_row = gtk_tree_model_iter_next(store, &iter);
+    g_free(value);
   }
 }
 
