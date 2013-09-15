@@ -1,3 +1,10 @@
+mp3splt-gtk (0.9-0ubuntu0~ppa2) precise; urgency=low
+
+  * Try to fix generation of control file, hard to see why this is done this
+    way, make maintainance of the simple package quite complicated...
+
+ -- Dominik Stadler (Ubuntu key) <dominik.stadler@gmx.at>  Sun, 15 Sep 2013 20:01:55 +0200
+
 mp3splt-gtk (0.9-0ubuntu0~ppa1) precise; urgency=low
 
   * New upstream release.
