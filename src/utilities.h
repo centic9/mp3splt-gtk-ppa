@@ -3,7 +3,7 @@
  * mp3splt-gtk -- utility based on mp3splt,
  *                for mp3/ogg splitting without decoding
  *
- * Copyright (c) 2005-2012 Alexandru Munteanu - io_fx@yahoo.fr
+ * Copyright (c) 2005-2013 Alexandru Munteanu - m@ioalex.net
  *
  * http://mp3splt.sourceforge.net/
  *
@@ -23,24 +23,29 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307,
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301,
  * USA.
  *
  *********************************************************/
 
 #ifndef UTILITIES_H
 
-gint check_if_we_have_player();
-gint is_filee(const gchar *fname);
-gint check_if_dir(guchar *fname);
-gint check_if_file(guchar *fname);
-void print_processing_file(gchar *filename);
-void remove_end_slash_n_r_from_filename(char *filename);
-gchar *transform_to_utf8(gchar *text, gint free_or_not,
-    gint *must_be_freed);
-
-gboolean container_has_child(GtkContainer *cont, GtkWidget *my_child);
-
 #define UTILITIES_H
+
+#define DOUBLE_PRECISION 0.00000001
+
+#include "external_includes.h"
+#include "ui_types.h"
+#include "main_window.h"
+
+gint directory_exists(const gchar *directory);
+gint file_exists(const gchar *fname);
+void print_processing_file(gchar *filename, ui_state *ui);
+void remove_end_slash_n_r_from_filename(char *filename);
+gchar *transform_to_utf8(gchar *text, gint free_or_not, gint *must_be_freed);
+void build_path(GString *path, const gchar *dir, const gchar *filename);
+
+gboolean double_equals(gdouble double_to_compare, gdouble compared_value);
+
 #endif
 

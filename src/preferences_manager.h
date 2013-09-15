@@ -3,7 +3,7 @@
  * mp3splt-gtk -- utility based on mp3splt,
  *                for mp3/ogg splitting without decoding
  *
- * Copyright (c) 2005-2012 Alexandru Munteanu - io_fx@yahoo.fr
+ * Copyright (c) 2005-2013 Alexandru Munteanu - m@ioalex.net
  *
  * http://mp3splt.sourceforge.net/
  *
@@ -23,20 +23,36 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307,
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301,
  * USA.
  *
  *********************************************************/
 
 #ifndef PREFERENCES_MANAGER_H
 
-gchar *get_preferences_filename();
-void load_preferences();
-void write_default_preferences_file();
-void check_pref_file();
-
-void set_language();
-
 #define PREFERENCES_MANAGER_H
+
+#include <gtk/gtk.h>
+
+#include "ui_types.h"
+
+gchar *get_preferences_filename();
+gchar *get_configuration_directory();
+void load_preferences(ui_state *ui);
+void save_preferences(ui_state *ui);
+
+preferences_state *pm_state_new();
+void pm_free(preferences_state **pm);
+
+void pm_register_spinner_int_preference(gchar *main_key, gchar *second_key,
+    gint default_value, GtkWidget *spinner,
+    void (*update_spinner_value_cb)(GtkWidget *spinner, gpointer data),
+    gpointer user_data_for_cb, preferences_state *pm);
+
+void pm_register_range_preference(gchar *main_key, gchar *second_key,
+    gint default_value, GtkWidget *range,
+    void (*update_adjustment_value)(GtkAdjustment *adjustment, gpointer data),
+    gpointer user_data_for_cb, preferences_state *pm);
+
 #endif
 

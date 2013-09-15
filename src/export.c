@@ -4,7 +4,7 @@
  *                for mp3/ogg splitting without decoding
  *
  * Copyright: (C) 2005-2010 Alexandru Munteanu
- * Contact: io_fx@yahoo.fr
+ * Contact: m@ioalex.net
  *
  * http://mp3splt.sourceforge.net/
  *
@@ -24,7 +24,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307,
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301,
  * USA.
  *
  *********************************************************/
@@ -35,168 +35,62 @@
  * splitpoints as a Cue sheet.
  *********************************************************/
 
-#include <gtk/gtk.h>
-#include <glib/gi18n.h>
-#include <string.h>
-#include <errno.h>
-#include <stdio.h>
 #include "export.h"
-#include "main_win.h"
-#include "player_tab.h"
-#include "tree_tab.h"
-#include "ui_manager.h"
-#include "widgets_helper.h"
 
-extern ui_state *ui;
-
-/*! Export the current split points into a cue file
-
-\param filename The name of the file to write to.
-\todo 
- - If we have previously imported the file... ...do we 
-   want to handle all the tags we do not use --- but that
-   have been there? And if yes: How do we handle them best?
- - Is there any file format that better suits us than a cue file?
- - if our input file does not have an extension... ...how to handle
-   this? (we output the extension in the "FILE" line.)
- - Is there really no simple C/GTK+ function for quoting quotes?
-*/
-void export_file(const gchar* filename)
+//! Export the current split points into a cue file
+static void export_to_cue_file(const gchar* filename, ui_state *ui)
 {
-  FILE *outfile;
-  GtkTreeModel *model;
-  GtkTreeIter iter;
-  
-  if((outfile=fopen(filename,"w"))==0)
-    {
-      put_status_message((gchar *)strerror(errno));
-      return;
-    };
+  const gchar *old_fname = mp3splt_get_filename_to_split(ui->mp3splt_state);
+  gchar *fname = NULL;
+  if (old_fname != NULL) { fname = g_strdup(old_fname); }
 
-  if(fprintf(outfile,"REM CREATOR \"MP3SPLT_GTK\"\n")<0)
-    {
-      put_status_message((gchar *)strerror(errno));
-      return;
-    }
+  mp3splt_set_filename_to_split(ui->mp3splt_state, get_input_filename(ui->gui));
 
-  if(fprintf(outfile,"REM SPLT_TITLE_IS_FILENAME\n")<0)
-    {
-      put_status_message((gchar *)strerror(errno));
-      return;
-    }
+  gchar *directory = g_path_get_dirname(filename);
+  mp3splt_set_path_of_split(ui->mp3splt_state, directory);
+  g_free(directory);
 
-  // Determine which type our input file is of.
-  gchar *extension=inputfilename_get();
-  gchar *tmp;
-  while((tmp=strchr(extension,'.')))
-    {
-      extension=++tmp;
-    }
+  mp3splt_erase_all_splitpoints(ui->mp3splt_state);
+  mp3splt_erase_all_tags(ui->mp3splt_state);
 
-  if(fprintf(outfile,"FILE \"%s\" %s\n",inputfilename_get(),extension)<0)
-    {
-      put_status_message((gchar *)strerror(errno));
-      return;
-    };
+  put_splitpoints_and_tags_in_mp3splt_state(ui->mp3splt_state, ui);
 
-  model = gtk_tree_view_get_model(tree_view);
-  
-  //if the table is not empty get iter number
-  if(gtk_tree_model_get_iter_first(model, &iter))
-    {
-      // The track number
-      gint count = 1;
+  gchar *file = g_path_get_basename(filename);
+  splt_code err = mp3splt_export(ui->mp3splt_state, CUE_EXPORT, file, SPLT_FALSE);
+  print_status_bar_confirmation(err, ui);
+  g_free(file);
 
-      do 
-	{
-	  // All information we need for this track
-	  gchar *description;
-	  gint mins,secs,hundr;
-	  gboolean keep;
-	  
-	  gtk_tree_model_get(GTK_TREE_MODEL(model), &iter,
-			     COL_DESCRIPTION,&description,
-                             COL_MINUTES, &mins,
-                             COL_SECONDS, &secs,
-                             COL_HUNDR_SECS, &hundr,
-			     COL_CHECK, &keep,
-			     -1);
+  mp3splt_set_filename_to_split(ui->mp3splt_state, fname);
+  if (fname != NULL) { g_free(fname); }
+}
 
-	  // Sometimes libmp3splt introduces an additional split point
-	  // way below the end of the file --- that breaks cue import
-	  // later => skip all points with extremely high time values.
-	  if(mins<357850)
-	    {
-	      // Output the track header
-	      if(fprintf(outfile,"\tTRACK %02i AUDIO\n",count++)<0)
-		{
-		  put_status_message((gchar *)strerror(errno));
-		  return;
-		};
-	      
-	      
-	      // Output the track description escaping any quotes
-	      if(fprintf(outfile,"\t\tTITLE \"")<0)
-		{
-		  put_status_message((gchar *)strerror(errno));
-		  return;
-		}
-	      
-	      gchar *outputchar;
-	      for(outputchar=description;*outputchar!='\0';outputchar++)
-		{
-		  if(*outputchar=='"')
-		    {
-		      if(fprintf(outfile,"\\\"")<0)
-			{
-			  put_status_message((gchar *)strerror(errno));
-			  return;
-			}
-		    }
-		  else
-		    {
-		      if(fprintf(outfile,"%c",*outputchar)<0)
-			{
-			  put_status_message((gchar *)strerror(errno));
-			  return;
-			}
-		    }
-		}    
-	      if(fprintf(outfile,"\" \n")<0)
-		{
-		  put_status_message((gchar *)strerror(errno));
-		  return;
-		};
-	      
-	      if(!keep)
-		{
-		  if(fprintf(outfile,"\t\tREM NOKEEP\n")<0)
-		    {
-		      put_status_message((gchar *)strerror(errno));
-		      return;
-		    }
-		}
-	      
-	      if(fprintf(outfile,"\t\tINDEX 01 %d:%02d:%02d\n",mins,secs,hundr)<0)
-		{
-		  put_status_message((gchar *)strerror(errno));
-		  return;
-		}
-	    }
-	} while(gtk_tree_model_iter_next(model, &iter));
-    }
-  
-  fclose(outfile);
+void export_cue_file_in_configuration_directory(ui_state *ui)
+{
+  if (ui->status->lock_cue_export) { return; }
+
+  mp3splt_set_int_option(ui->mp3splt_state, SPLT_OPT_CUE_DISABLE_CUE_FILE_CREATED_MESSAGE,
+      SPLT_TRUE);
+
+  gchar *configuration_directory = get_configuration_directory();
+
+  gsize filename_size = strlen(configuration_directory) + 20;
+  gchar *splitpoints_cue_filename = g_malloc(filename_size * sizeof(gchar));
+  g_snprintf(splitpoints_cue_filename, filename_size, "%s%s%s", configuration_directory,
+      G_DIR_SEPARATOR_S, "splitpoints.cue");
+
+  export_to_cue_file(splitpoints_cue_filename, ui);
+
+  g_free(configuration_directory);
+  g_free(splitpoints_cue_filename);
+
+  mp3splt_set_int_option(ui->mp3splt_state, SPLT_OPT_CUE_DISABLE_CUE_FILE_CREATED_MESSAGE,
+      SPLT_FALSE);
 }
 
 //! Choose the file to save the session to
-void ChooseCueExportFile(GtkWidget *widget, gpointer data)
+void export_cue_file_event(GtkWidget *widget, ui_state *ui)
 {
-  // file chooser
-  GtkWidget *file_chooser;
-
-  //creates the dialog
-  file_chooser = gtk_file_chooser_dialog_new(_("Select cue file name"),
+  GtkWidget *file_chooser = gtk_file_chooser_dialog_new(_("Cue filename to export"),
       NULL,
       GTK_FILE_CHOOSER_ACTION_SAVE,
       GTK_STOCK_CANCEL,
@@ -207,25 +101,20 @@ void ChooseCueExportFile(GtkWidget *widget, gpointer data)
 
   wh_set_browser_directory_handler(ui, file_chooser);
 
-  // tells the dialog to list only cue files
-  GtkWidget *our_filter = (GtkWidget *)gtk_file_filter_new();
-  gtk_file_filter_set_name (GTK_FILE_FILTER(our_filter), _("cue files (*.cue)"));
-  gtk_file_filter_add_pattern(GTK_FILE_FILTER(our_filter), "*.cue");
-  gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(file_chooser), GTK_FILE_FILTER(our_filter));
+  GtkFileFilter *our_filter = gtk_file_filter_new();
+  gtk_file_filter_set_name (our_filter, _("cue files (*.cue)"));
+  gtk_file_filter_add_pattern(our_filter, "*.cue");
+  gtk_file_filter_add_pattern(our_filter, "*.CUE");
+  gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(file_chooser), our_filter);
   gtk_file_chooser_set_do_overwrite_confirmation(GTK_FILE_CHOOSER(file_chooser),TRUE);
-
 
   if (gtk_dialog_run(GTK_DIALOG(file_chooser)) == GTK_RESPONSE_ACCEPT)
   {
-    gchar *filename =
-      gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(file_chooser));
-
-    //Write the output file
-    export_file(filename);
+    gchar *filename = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(file_chooser));
+    export_to_cue_file(filename, ui);
     g_free(filename);
   }
-  
-  //destroy the dialog
+
   gtk_widget_destroy(file_chooser);
 }
 

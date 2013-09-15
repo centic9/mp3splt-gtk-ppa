@@ -37,6 +37,10 @@ win=$1
     exit 1
 }
 
+#remove old libtool generated files
+rm -f m4/{libtool,argz,ltdl,ltoptions,lt~obsolete,ltversion,ltsugar}.m4
+rm -f libtool aclocal.m4 config.status configure autom4te.cache/* ltmain.sh
+
 if test "x$win" != x;then
  WIN_ACLOCAL_FLAGS="-I /usr/share/aclocal"
 fi
@@ -58,6 +62,17 @@ if test "x$win" = x; then {
   && aclocal -I m4 $WIN_ACLOCAL_FLAGS $ACLOCAL_FLAGS \
   && echo "done"
 }; fi
+
+{
+   `which glibtoolize 2>&1 >/dev/null`
+    if [ $? -eq 0 ]; then
+      echo -n "Running glibtoolize (in case we use the cutter testing framework) ... "
+      glibtoolize -c --force
+    else
+      echo -n "Running libtoolize (in case we use the cutter testing framework) ... "
+      libtoolize -c --force
+    fi
+} && echo "done"
 
 echo -n "Running autoconf... " \
 && autoconf && echo "done" \

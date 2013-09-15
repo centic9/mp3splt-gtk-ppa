@@ -3,7 +3,7 @@
  * mp3splt-gtk -- utility based on mp3splt,
  *                for mp3/ogg splitting without decoding
  *
- * Copyright (c) 2005-2012 Alexandru Munteanu - io_fx@yahoo.fr
+ * Copyright (c) 2005-2013 Alexandru Munteanu - m@ioalex.net
  *
  * http://mp3splt.sourceforge.net/
  *
@@ -23,7 +23,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307,
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301,
  * USA.
  *
  *********************************************************/
@@ -35,36 +35,37 @@
  *
  *********************************************************/
 
-gint connect_snackamp(gint port);
-gchar *cut_begin_end(gchar *result);
-gint disconnect_snackamp();
-gchar *snackamp_socket_send_message(gchar *message);
-gint get_integer_from_string(gchar *result);
-gboolean snackamp_is_connected();
-void snackamp_get_song_infos(gchar *total_infos);
-gchar *snackamp_get_filename();
-gint snackamp_get_playlist_pos();
-void snackamp_stop();
-gint snackamp_get_playlist_number();
-gchar *snackamp_get_title_song();
-gint snackamp_get_time_elapsed();
-void snackamp_start();
-void snackamp_set_playlist_pos(gint pos);
-void snackamp_select_last_file();
-void snackamp_play();
-void snackamp_play_last_file();
-void snackamp_add_files(GList *list);
-void snackamp_set_volume(gint volume);
-gint snackamp_get_volume();
-void snackamp_start_with_songs(GList *list);
-gint snackamp_is_running();
-void snackamp_pause();
-void snackamp_next();
-void snackamp_prev();
-void snackamp_jump(gint position);
-gint snackamp_get_total_time();
-gint snackamp_is_playing();
-gint snackamp_is_paused();
-void snackamp_quit();
+#ifndef SNACKAMP_CONTROL_H
 
+#define SNACKAMP_CONTROL_H
+
+#include "external_includes.h"
+#include "ui_types.h"
+
+gint connect_snackamp(gint port, ui_state *ui);
+gint disconnect_snackamp(ui_state *ui);
+void snackamp_get_song_infos(gchar *total_infos, ui_state *ui);
+gchar *snackamp_get_filename(ui_state *ui);
+void snackamp_stop(ui_state *ui);
+gint snackamp_get_playlist_number(ui_state *ui);
+gchar *snackamp_get_title_song(ui_state *ui);
+gint snackamp_get_time_elapsed(ui_state *ui);
+void snackamp_start(ui_state *ui);
+void snackamp_select_last_file(ui_state *ui);
+void snackamp_play(ui_state *ui);
+void snackamp_play_last_file(ui_state *ui);
+void snackamp_add_files(GList *list, ui_state *ui);
+void snackamp_set_volume(gint volume, ui_state *ui);
+gint snackamp_get_volume(ui_state *ui);
+void snackamp_start_with_songs(GList *list, ui_state *ui);
+gint snackamp_is_running(ui_state *ui);
+void snackamp_pause(ui_state *ui);
+void snackamp_next(ui_state *ui);
+void snackamp_prev(ui_state *ui);
+void snackamp_jump(gint position, ui_state *ui);
+gint snackamp_get_total_time(ui_state *ui);
+gint snackamp_is_playing(ui_state *ui);
+gint snackamp_is_paused(ui_state *ui);
+
+#endif
 

@@ -4,7 +4,7 @@
  *                for mp3/ogg splitting without decoding
  *
  * Copyright: (C) 2005-2010 Alexandru Munteanu
- * Contact: io_fx@yahoo.fr
+ * Contact: m@ioalex.net
  *
  * http://mp3splt.sourceforge.net/
  *
@@ -24,13 +24,20 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307,
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301,
  * USA.
  *
  *********************************************************/
 
-#ifndef _IMPORT_H
-#define _IMPORT_H
-void import_event(GtkWidget *widget, gpointer *data);
-void handle_import(gchar *filename);
+#ifndef IMPORT_H
+#define IMPORT_H
+
+#include "all_includes.h"
+
+void import_event(GtkWidget *widget, ui_state *ui);
+void import_file(gchar *filename, ui_state *ui);
+void import_cue_file_from_the_configuration_directory(ui_state *ui);
+void import_files_to_batch_and_free(GSList *files, ui_state *ui);
+
 #endif
+
