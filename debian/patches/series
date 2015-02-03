@@ -1,2 +1,3 @@
 link-against-dbus-glib-1.patch
 gcc_error_fprintf.patch
+allow_deprecated_headers.patch
