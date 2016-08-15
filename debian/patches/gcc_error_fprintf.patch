@@ -1,7 +1,7 @@
 Index: mp3splt-gtk/src/ui_manager.c
 ===================================================================
---- mp3splt-gtk.orig/src/ui_manager.c	2013-09-15 19:42:03.000000000 +0200
-+++ mp3splt-gtk/src/ui_manager.c	2013-09-15 19:43:06.000000000 +0200
+--- mp3splt-gtk.orig/src/ui_manager.c	2016-08-15 11:09:17.571699222 +0200
++++ mp3splt-gtk/src/ui_manager.c	2016-08-15 11:09:17.571699222 +0200
 @@ -182,7 +182,7 @@
      g_vsnprintf(formatted_message, 1024, message, ap);
      va_end(ap);
