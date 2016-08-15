@@ -1,0 +1,26 @@
+Index: mp3splt-gtk/configure
+===================================================================
+--- mp3splt-gtk.orig/configure	2013-09-15 15:56:28.000000000 +0200
++++ mp3splt-gtk/configure	2014-06-28 08:51:43.020524660 +0200
+@@ -15173,7 +15173,7 @@
+         { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+ $as_echo "yes" >&6; }
+ 
+-    CFLAGS="$CFLAGS -DGTK_DISABLE_SINGLE_INCLUDES -DGDK_DISABLE_DEPRECATED -DGTK_DISABLE_DEPRECATED -DGSEAL_ENABLE"
++    CFLAGS="$CFLAGS -DGTK_DISABLE_SINGLE_INCLUDES -DGDK_DISABLE_DEPRECATED -DGSEAL_ENABLE"
+     audacious_check="audclient >= 3.0"
+ 
+ fi
+Index: mp3splt-gtk/configure.ac
+===================================================================
+--- mp3splt-gtk.orig/configure.ac	2013-09-15 15:48:32.000000000 +0200
++++ mp3splt-gtk/configure.ac	2014-06-28 08:51:31.732401013 +0200
+@@ -161,7 +161,7 @@
+ 
+   PKG_CHECK_MODULES(GTK, [gtk+-3.0 >= 3.0],
+   [
+-    CFLAGS="$CFLAGS -DGTK_DISABLE_SINGLE_INCLUDES -DGDK_DISABLE_DEPRECATED -DGTK_DISABLE_DEPRECATED -DGSEAL_ENABLE"
++    CFLAGS="$CFLAGS -DGTK_DISABLE_SINGLE_INCLUDES -DGDK_DISABLE_DEPRECATED -DGSEAL_ENABLE"
+     audacious_check="audclient >= 3.0"
+   ],
+   [

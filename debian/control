@@ -1,23 +1,29 @@
 Source: mp3splt-gtk
 Section: sound
 Priority: optional
-Maintainer: Ryan Niebur <ryanryan52@gmail.com>
-DM-Upload-Allowed: yes
-Build-Depends: debhelper (>= 7.0), libmp3splt-dev (>= 0.9.2.1494), libgtk2.0-dev, libgstreamer1.0-dev, libgstreamer-plugins-base1.0-dev, audacious-dev, gnome-doc-utils, libgnomeui-dev, rarian-compat
-Standards-Version: 3.9.1
+Maintainer: Ryan Niebur <ryan@debian.org>
+Build-Depends: debhelper (>= 7.0.50), libgtk-3-dev, libgstreamer0.10-dev, libgstreamer-plugins-base0.10-dev | libgstreamer-plugins-base1.0-dev, libaudclient-dev, gnome-doc-utils, rarian-compat, libmp3splt-dev (>= 0.9.0~), libmp3splt-dev (<< 0.9.1~)
+Standards-Version: 3.9.3
 Homepage: http://mp3splt.sourceforge.net/
 Vcs-Git: git://anonscm.debian.org/collab-maint/mp3splt-gtk.git
 Vcs-Browser: http://anonscm.debian.org/gitweb/?p=collab-maint/mp3splt-gtk.git;a=summary
 
 Package: mp3splt-gtk
 Architecture: any
-Depends: ${shlibs:Depends}, ${misc:Depends}, libmp3splt0 (>= 0.9.2.1494), libmp3splt0-mp3 | libmp3splt-plugin
-Recommends: gstreamer1.0-plugins-good, libmp3splt0-ogg
-Suggests: audacious
-Description: Gnome application for lossless linear editing of audio files
- This application allows to cut an audio file into several tracks.
- Since there is no decoding step involved this means that MP3 (including
- VBR) and Ogg Vorbis can be split into smaller files without
- loosing any quality. Useful for splitting albums into tracks which
- can be done either manually, using freedb.org data from the net
- or using .cue files ...
+Depends: ${shlibs:Depends}, ${misc:Depends}, libmp3splt0-mp3 | libmp3splt0-plugin
+Recommends: libmp3splt0-mp3, libmp3splt0-ogg, libmp3splt0-flac, gstreamer0.10-plugins-good
+Suggests: mp3splt, audacious
+Description: GTK interface to split MP3, Ogg Vorbis and FLAC files without reencoding
+ Mp3Splt-project is a utility to split mp3, ogg and flac files selecting a
+ begin and an end time position, without decoding. It's very useful to
+ split large mp3/ogg/flac to make smaller files or to split entire albums to
+ obtain original tracks. If you want to split an album, you can select
+ split points and filenames manually or you can get them automatically
+ from CDDB (internet or a local file) or from .cue files. Supports also
+ automatic silence split, that can be used also to adjust cddb/cue
+ splitpoints. You can extract tracks from Mp3Wrap or AlbumWrap files in
+ few seconds. For mp3 files, both ID3v1 & ID3v2 tags are
+ supported. Mp3splt-project is split in 3 parts: libmp3splt, mp3splt
+ and mp3splt-gtk.
+ .
+ This package provides mp3splt-gtk, the graphical interface.
