@@ -3,7 +3,7 @@
  * mp3splt-gtk -- utility based on mp3splt,
  *                for mp3/ogg splitting without decoding
  *
- * Copyright: (C) 2005-2013 Alexandru Munteanu
+ * Copyright: (C) 2005-2014 Alexandru Munteanu
  * Contact: m@ioalex.net
  *
  * http://mp3splt.sourceforge.net/
@@ -36,7 +36,7 @@
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #else
-#define VERSION "0.9"
+#define VERSION "0.9.2"
 #define PACKAGE_NAME "mp3splt-gtk"
 #endif
 
@@ -56,10 +56,9 @@
 
 #ifdef __WIN32__
 
-#include <windows.h>
-
 #include <winsock2.h>
 #include <ws2tcpip.h>
+#include <windows.h>
 
 #include <shlwapi.h>
 #define usleep(x) Sleep(x/1000)

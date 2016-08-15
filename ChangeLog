@@ -4,6 +4,47 @@ Please read the ChangeLog of libmp3splt for more information.
 Some changes are implemented in libmp3splt, but reported here for convenience.
 
 -------------------------------------------------------------
+mp3splt-gtk version 0.9.2
+
+- added bit reservoir handling for gapless playback option
+- added @d to output format which is equal to: last directory of the input filename or the filename itself if no directory
+- dropped out GTK 2.x support
+- removed gtk3 deprecated symbols and made it look more gtk3-alike
+
+-------------------------------------------------------------
+mp3splt-gtk version 0.9.1b
+
+- bug fix: make sure to separate artist and performer in CUE files for use of @p and @a (libmp3splt)
+- bug fix on CUE: from INDEX format MM:SS:FF, handle FF as frames instead of hundreths (libmp3splt)
+- bug fix: issue when having input file inside several recursive symlinks (libmp3splt)
+- small improvement on CUE: also accept INDEX 1 and not only INDEX 01 (libmp3splt)
+
+-------------------------------------------------------------
+mp3splt-gtk version 0.9.1a
+
+- FLAC: fixed an important bug not allowing to split some files (libmp3splt)
+
+-------------------------------------------------------------
+mp3splt-gtk version 0.9.1
+
+- FLAC internal cue sheets support
+- simple MP3 chapter marks support (with no overlap)
+- added 'Use CDDB/CUE file having similar name as the input file' option in Batch split
+- optimized amplitude wave drawing time (now consumes less CPU) and make it not to "shake" anymore
+- added customizable seeks in mp3splt-gtk (patch #7 - thanks to Sašo Živanović)
+- added quick preview closest splitpoint shortcut and option to stop gstreamer quick preview
+  several milliseconds earlier
+- added 'preview closest splitpoint & pause' option (feature request #98)
+- now compiled and delivered by default with gtk+-3.0 on Windows
+- gstreamer 0.10 support was dropped in favor of the 1.0 version
+- fixed bug #157: quick preview goes too far
+- fixed bug #159 with some FLAC files being detected as MP3; also look for the file extension
+  when detecting a file for a plugin (libmp3splt)
+- fixed bug #160 '---last cue splitpoint--- created at 99 59 99 for mp3 files >100mins' (libmp3splt)
+- better thread handling to make sure there is no overlap between the GTK thread and the other threads
+- fixed bug #162 - Tooltip displayed for only a second
+
+-------------------------------------------------------------
 mp3splt-gtk version 0.9
 
 - experimental FLAC support added

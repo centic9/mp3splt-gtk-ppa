@@ -3,7 +3,7 @@
  *
  *
  * Contact: m@ioalex.net
- * Copyright: (C) 2005-2013 Alexandru Munteanu
+ * Copyright: (C) 2005-2014 Alexandru Munteanu
  *
  * http://mp3splt.sourceforge.net/
  *
@@ -96,6 +96,11 @@ typedef struct {
   gpointer data;
 } preview_index_and_data;
 
+typedef struct points_and_tags {
+  GPtrArray *splitpoints;
+  GPtrArray *tags;
+} points_and_tags;
+
 typedef struct {
   gchar *browser_directory;
   ui_main_window *main_win;
@@ -170,6 +175,25 @@ typedef struct {
   preview_index_and_data preview_indexes[6];
 
   gint timeout_value;
+
+  gint gstreamer_stop_before_end;
+
+  gint small_seek_jump_value;
+  gint seek_jump_value;
+  gint big_seek_jump_value;
+
+  //make export threads to execute in order
+  GThread *previous_export_thread;
+
+  //previous right mark time/pixels
+  gint previous_mark_time;
+  gfloat previous_mark_pixel;
+  gfloat accumulated_diff;
+  gint pixels_diff_regarding_previous;
+  GHashTable *previous_pixel_by_time;
+  GHashTable *pixel_moved_by_time;
+
+  gint drawing_preferences_silence_wave;
 } ui_infos;
 
 typedef struct {
@@ -200,9 +224,9 @@ typedef struct {
 } player_infos;
 
 typedef struct {
+  GtkApplication *application;
   GtkWidget *window;
 
-  GtkActionGroup *action_group;
   GtkWidget *open_file_chooser_button;
   GString *input_filename;
 
@@ -288,6 +312,7 @@ typedef struct {
   GtkWidget *playlist_remove_all_files_button;
 
   GtkWidget *frame_mode;
+  GtkWidget *bit_reservoir_mode;
   GtkWidget *adjust_mode;
 
   GtkWidget *spinner_adjust_offset;
@@ -382,6 +407,7 @@ typedef struct {
 
   GtkWidget *player_combo_box;
   GtkWidget *radio_button;
+  GtkWidget *gstreamer_stop_before_end_box;
 
   GPtrArray *wave_preview_labels;
 
@@ -417,6 +443,7 @@ typedef struct {
 
   gint quick_preview_end_splitpoint;
   gint preview_start_splitpoint;
+  gboolean stop_preview_right_after_start;
 
   gfloat move_time;
 
@@ -463,24 +490,17 @@ typedef struct {
   gint preview_row;
   gint selected_split_mode;
 
-  gint should_trim;
-
   gint file_selection_changed;
 
   gint stop_split;
 
-  long previous_first_time_drawed;
-  gint previous_first_x_drawed;
-  long previous_second_time_drawed;
-  gint previous_second_x_drawed;
-  GHashTable *previous_distance_by_time;
   gfloat previous_zoom_coeff;
   gint previous_interpolation_level;
 
   gint lock_cue_export;
 } gui_status;
 
-#define SPLT_MUTEX GStaticMutex
+#define SPLT_MUTEX GMutex
 
 typedef struct {
   gint return_code;
@@ -499,6 +519,9 @@ typedef struct {
   SPLT_MUTEX variables_mutex;
 
   int importing_cue_from_configuration_directory;
+
+  gint argc;
+  gchar **argv;
 } ui_state;
 
 typedef struct {
@@ -508,8 +531,103 @@ typedef struct {
 
 typedef struct {
   ui_state *ui;
+  gpointer data;
+  GThreadFunc thread;
+  gint is_checked_output_radio_box;
+  gchar *filename_to_split;
+} ui_with_data;
+
+typedef struct {
+  ui_state *ui;
   char *fname;
+  gboolean is_checked_output_radio_box;
+  gchar *output_format;
 } ui_with_fname;
+
+typedef struct {
+  ui_state *ui;
+  points_and_tags *pat;
+  GThread *previous_thread;
+  gchar *export_filename;
+} ui_with_pat;
+
+typedef struct {
+  ui_state *ui;
+  GSList *list;
+} ui_with_list;
+
+typedef struct {
+  ui_state *ui;
+  char **filenames;
+  int num_of_filenames;
+} ui_with_fnames;
+
+typedef struct {
+  ui_state *ui;
+
+  int frame_mode;
+  int bit_reservoir_mode;
+
+  //adjust options
+  int adjust_mode;
+  float adjust_offset;
+  int adjust_gap;
+  float adjust_threshold;
+  float adjust_min;
+
+  //single or batch
+  int split_file_mode;
+
+  //type of split
+  int selected_split_mode;
+
+  long time_split_value;
+  int equal_tracks_value;
+
+  //batch split by silence options
+  float silence_threshold;
+  float silence_offset;
+  int silence_number;
+  float silence_minimum_length; 
+  float silence_minimum_track_length; 
+  int silence_remove;
+
+  float trim_silence_threshold;
+
+  //single split by silence options
+  float single_silence_threshold;
+  float single_silence_offset;
+  int single_silence_number;
+  float single_silence_minimum_length; 
+  float single_silence_minimum_track_length; 
+  int single_silence_remove;
+
+  //no_tags, default_tags, ...
+  int selected_tags_value;
+  //version of tags
+  int tags_version;
+
+  int create_dirs_from_filenames;
+
+  //tags from filename regex
+  int regex_replace_underscores;
+  int regex_artist_tag_format;
+  int regex_album_tag_format;
+  int regex_title_tag_format;
+  int regex_comment_tag_format;
+  gchar *regex;
+  gchar *regex_default_comment;
+  gchar *regex_default_genre;
+
+  points_and_tags *pat;
+  gchar *output_format;
+  gboolean is_checked_output_radio_box;
+  gchar *output_directory;
+
+  gchar *test_regex_filename;
+  gboolean should_trim;
+  gint freedb_selected_id;
+} ui_for_split;
 
 #endif
 

@@ -3,7 +3,7 @@
  *
  *                for mp3/ogg splitting without decoding
  *
- * Copyright: (C) 2005-2013 Alexandru Munteanu
+ * Copyright: (C) 2005-2014 Alexandru Munteanu
  * Contact: m@ioalex.net
  *
  * http://mp3splt.sourceforge.net/
@@ -38,7 +38,6 @@
 #include "widgets_helper.h"
 
 static guint _wh_add_row_to_table();
-static GtkWidget *_wh_put_in_new_hbox_with_margin(GtkWidget *widget, gint margin);
 static void _wh_attach_to_table(GtkWidget *table, GtkWidget *widget,
     guint start_column, guint end_column, guint row, int expand);
 static void _wh_add_in_table_with_label(GtkWidget *table, const gchar *label_text,
@@ -75,16 +74,10 @@ GtkWidget *wh_set_title_and_get_vbox(GtkWidget *widget, const gchar *title)
 
 GtkWidget *wh_new_table()
 {
-#if GTK_MAJOR_VERSION >= 3
   GtkWidget *table = gtk_grid_new();
   g_object_set_data(G_OBJECT(table), "rows", GINT_TO_POINTER(0));
   gtk_grid_set_column_spacing(GTK_GRID(table), 5);
   gtk_grid_set_row_spacing(GTK_GRID(table), 4);
-#else
-  GtkWidget *table = gtk_table_new(1, 2, FALSE);
-  gtk_table_set_col_spacing(GTK_TABLE(table), 0, 0);
-  gtk_table_set_col_spacing(GTK_TABLE(table), 1, 5);
-#endif
   return table;
 }
 
@@ -107,7 +100,14 @@ void wh_add_in_table_with_label(GtkWidget *table, const gchar *label_text, GtkWi
 
 GtkWidget *wh_put_in_new_hbox_with_margin_level(GtkWidget *widget, gint margin_level)
 {
-  return _wh_put_in_new_hbox_with_margin(widget, 6 * margin_level);
+  return wh_put_in_new_hbox(widget, 6 * margin_level, TRUE, TRUE);
+}
+
+GtkWidget *wh_put_in_new_hbox(GtkWidget *widget, gint margin, gboolean expand, gboolean fill)
+{
+  GtkWidget *hbox = wh_hbox_new();
+  gtk_box_pack_start(GTK_BOX(hbox), widget, expand, fill, margin);
+  return hbox;
 }
 
 void wh_put_in_hbox_and_attach_to_vbox(GtkWidget *widget, GtkWidget *vbox, gint vertical_margin)
@@ -149,20 +149,6 @@ GtkWidget *wh_new_button(const gchar *button_label)
 
 void wh_get_widget_size(GtkWidget *widget, gint *width, gint *height)
 {
-#if GTK_MAJOR_VERSION <= 2
-  GtkAllocation allocation;
-  gtk_widget_get_allocation(widget, &allocation);
-
-  if (width != NULL)
-  {
-    *width = allocation.width;
-  }
-
-  if (height != NULL)
-  {
-    *height= allocation.height;
-  }
-#else
   if (width != NULL)
   {
     *width = gtk_widget_get_allocated_width(widget);
@@ -172,12 +158,10 @@ void wh_get_widget_size(GtkWidget *widget, gint *width, gint *height)
   {
     *height = gtk_widget_get_allocated_height(widget);
   }
-#endif
 }
 
 GtkWidget *wh_create_int_spinner_in_box_with_top_width(gchar *before_label, gchar *after_label,
-    gdouble initial_value,
-    gdouble minimum_value, gdouble maximum_value, 
+    gdouble initial_value, gdouble minimum_value, gdouble maximum_value, 
     gdouble step_increment, gdouble page_increment,
     gchar *after_newline_label, 
     void (*spinner_callback)(GtkWidget *spinner, ui_state *ui),
@@ -235,51 +219,31 @@ GtkWidget *wh_create_int_spinner_in_box(gchar *before_label, gchar *after_label,
 
 GtkWidget *wh_hbox_new()
 {
-#if GTK_MAJOR_VERSION <= 2
-  return gtk_hbox_new(FALSE, 0);
-#else
   GtkWidget *hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
   gtk_box_set_homogeneous(GTK_BOX(hbox), FALSE);
   return hbox;
-#endif
 }
 
 GtkWidget *wh_vbox_new()
 {
-#if GTK_MAJOR_VERSION <= 2
-  return gtk_vbox_new(FALSE, 0);
-#else
   GtkWidget *vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
   gtk_box_set_homogeneous(GTK_BOX(vbox), FALSE);
   return vbox;
-#endif
 }
 
 GtkWidget *wh_hscale_new(GtkAdjustment *adjustment)
 {
-#if GTK_MAJOR_VERSION <= 2
-  return gtk_hscale_new(adjustment);
-#else
   return gtk_scale_new(GTK_ORIENTATION_HORIZONTAL, adjustment);
-#endif
 }
 
 GtkWidget *wh_hscale_new_with_range(gdouble min, gdouble max, gdouble step)
 {
-#if GTK_MAJOR_VERSION <= 2
-  return gtk_hscale_new_with_range(min, max, step);
-#else
   return gtk_scale_new_with_range(GTK_ORIENTATION_HORIZONTAL, min, max, step);
-#endif
 }
 
 void wh_get_pointer(GdkEventMotion *event, gint *x, gint *y, GdkModifierType *state)
 {
-#if GTK_MAJOR_VERSION <= 2
-  gdk_window_get_pointer(event->window, x, y, state);
-#else
-  gdk_window_get_device_position(event->window, event->device, x, y, state);
-#endif
+  gdk_window_get_device_position(event->window, event->device, x, y, state); 
 }
 
 //!creates a scrolled window
@@ -291,6 +255,13 @@ GtkWidget *wh_create_scrolled_window()
       GTK_POLICY_AUTOMATIC,
       GTK_POLICY_AUTOMATIC);
   return scrolled_window;
+}
+
+void wh_add_box_to_scrolled_window(GtkWidget *box, GtkWidget *scrolled_window)
+{
+  GtkWidget *viewport = gtk_viewport_new(NULL, NULL);
+  gtk_container_add(GTK_CONTAINER(viewport), box);
+  gtk_container_add(GTK_CONTAINER(scrolled_window), GTK_WIDGET(viewport));
 }
 
 /*! Does this GtkContainer contain that object?
@@ -318,6 +289,8 @@ gboolean wh_container_has_child(GtkContainer *container, GtkWidget *my_child)
 
 void wh_set_image_on_button(GtkButton *button, GtkWidget *image)
 {
+  GtkImage *previous_image = GTK_IMAGE(gtk_button_get_image(button));
+  if (previous_image != NULL && previous_image == GTK_IMAGE(image)) { return; }
   gtk_button_set_image(button, image);
 }
 
@@ -338,21 +311,17 @@ void wh_set_browser_directory_handler(ui_state *ui, GtkWidget* dialog)
       G_CALLBACK(_wh_folder_changed_event), ui);
 }
 
-/*!creates a cool button with image from stock
-
-\param label_text The text that has to be displayed on the button
-\param stock_id The name of the stock image to be displayed on the
-	button 
-\param toggle_or_not TRUE means we create a toggle button
-*/
-GtkWidget *wh_create_cool_button(gchar *stock_id, gchar *label_text,
+GtkWidget *wh_create_cool_button(gchar *icon_name, gchar *label_text,
     gint toggle_or_not)
 {
   GtkWidget *box = wh_hbox_new();
   gtk_container_set_border_width(GTK_CONTAINER(box), 0);
 
-  GtkWidget *image = gtk_image_new_from_stock(stock_id, GTK_ICON_SIZE_MENU);
-  gtk_box_pack_start(GTK_BOX(box), image, FALSE, FALSE, 0);
+  if (icon_name != NULL)
+  {
+    GtkWidget *image = gtk_image_new_from_icon_name(icon_name, GTK_ICON_SIZE_MENU);
+    gtk_box_pack_start(GTK_BOX(box), image, FALSE, FALSE, 0);
+  }
 
   if (label_text != NULL)
   {
@@ -376,13 +345,16 @@ GtkWidget *wh_create_cool_button(gchar *stock_id, gchar *label_text,
   return button;
 }
 
-GtkWidget *wh_create_cool_label(gchar *stock_id, gchar *label_text)
+GtkWidget *wh_create_cool_label(gchar *icon_name, gchar *label_text)
 {
   GtkWidget *box = wh_hbox_new();
   gtk_container_set_border_width(GTK_CONTAINER(box), 0);
 
-  GtkWidget *image = gtk_image_new_from_stock(stock_id, GTK_ICON_SIZE_MENU);
-  gtk_box_pack_start(GTK_BOX(box), image, FALSE, FALSE, 0);
+  if (icon_name != NULL)
+  {
+    GtkWidget *image = gtk_image_new_from_icon_name(icon_name, GTK_ICON_SIZE_MENU);
+    gtk_box_pack_start(GTK_BOX(box), image, FALSE, FALSE, 0);
+  }
 
   if (label_text != NULL)
   {
@@ -400,17 +372,18 @@ GtkWidget *wh_create_window_with_close_button(gchar *title, gint width, gint hei
     GtkWindowPosition position, GtkWindow *parent_window,
     GtkWidget *main_area_widget, GtkWidget *bottom_widget, ...)
 {
-  GtkWidget *window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
-  g_signal_connect(G_OBJECT(window), "delete_event", 
-		   G_CALLBACK(gtk_widget_hide_on_delete), window);
+  GtkWidget *window = gtk_dialog_new();
+
+  g_signal_connect(G_OBJECT(window), "delete_event", G_CALLBACK(gtk_widget_hide_on_delete), window);
   gtk_window_set_title(GTK_WINDOW(window), title);
   gtk_window_set_destroy_with_parent(GTK_WINDOW(window), TRUE);
   gtk_window_set_default_size(GTK_WINDOW(window), width, height);
   gtk_window_set_position(GTK_WINDOW(window), GTK_WIN_POS_CENTER);
 
   GtkWidget *vbox = wh_vbox_new();
-  gtk_container_set_border_width(GTK_CONTAINER(vbox), 4);
-  gtk_container_add(GTK_CONTAINER(window), vbox);
+
+  GtkContainer *dialog_container = GTK_CONTAINER(gtk_dialog_get_content_area(GTK_DIALOG(window)));
+  gtk_box_pack_start(GTK_BOX(dialog_container), vbox, TRUE, TRUE, 0);
   gtk_box_pack_start(GTK_BOX(vbox), main_area_widget, TRUE, TRUE, 2);
 
   GtkWidget *bottom_hbox = wh_hbox_new();
@@ -425,7 +398,7 @@ GtkWidget *wh_create_window_with_close_button(gchar *title, gint width, gint hei
   }
   va_end(ap);
 
-  GtkWidget *close_button = wh_create_cool_button(GTK_STOCK_CLOSE, _("_Close"), FALSE);
+  GtkWidget *close_button = wh_create_cool_button("window-close", _("_Close"), FALSE);
   gtk_box_pack_end(GTK_BOX(bottom_hbox), close_button, FALSE, FALSE, 3);
   g_signal_connect(G_OBJECT(close_button), "clicked",
       G_CALLBACK(hide_window_from_button), window);
@@ -452,35 +425,11 @@ static void hide_window_from_button(GtkWidget *widget, gpointer data)
 
 static guint _wh_add_row_to_table(GtkWidget *table)
 {
-#if GTK_MAJOR_VERSION >= 3
   int number_of_rows = GPOINTER_TO_INT(g_object_get_data(G_OBJECT(table), "rows"));
   number_of_rows++;
   g_object_set_data(G_OBJECT(table), "rows", GINT_TO_POINTER(number_of_rows));
   gtk_grid_insert_row(GTK_GRID(table), number_of_rows);
   return number_of_rows;
-#else
-  guint rows;
-  guint columns;
-
-  g_object_get(G_OBJECT(table),
-      "n-rows", &rows,
-      "n-columns", &columns,
-      NULL);
-
-  guint new_rows = rows + 1;
-
-  gtk_table_resize(GTK_TABLE(table), new_rows, columns);
-  gtk_table_set_row_spacing(GTK_TABLE(table), new_rows - 1, 4);
-
-  return new_rows;
-#endif
-}
-
-static GtkWidget *_wh_put_in_new_hbox_with_margin(GtkWidget *widget, gint margin)
-{
-  GtkWidget *hbox = wh_hbox_new();
-  gtk_box_pack_start(GTK_BOX(hbox), widget, TRUE, TRUE, margin);
-  return hbox;
 }
 
 static void _wh_add_in_table_with_label(GtkWidget *table, const gchar *label_text,
@@ -501,18 +450,11 @@ static void _wh_attach_to_table(GtkWidget *table, GtkWidget *widget,
   GtkWidget *my_widget = widget;
   GtkWidget *hbox;
 
-#if GTK_MAJOR_VERSION >= 3
   gtk_widget_set_halign(my_widget, GTK_ALIGN_FILL);
-#else
-  GtkAttachOptions xoptions = GTK_FILL;
-#endif
+
   if (expand)
   {
-#if GTK_MAJOR_VERSION >= 3
     gtk_widget_set_hexpand(my_widget, TRUE);
-#else
-    xoptions |= GTK_EXPAND;
-#endif
   }
   else
   {
@@ -521,13 +463,6 @@ static void _wh_attach_to_table(GtkWidget *table, GtkWidget *widget,
     my_widget = hbox;
   }
 
-#if GTK_MAJOR_VERSION >= 3
   gtk_grid_attach(GTK_GRID(table), my_widget, start_column, row - 1, end_column - start_column, 1);
-#else
-  gtk_table_attach(GTK_TABLE(table), my_widget,
-      start_column, end_column, row-1, row,
-      xoptions, GTK_FILL | GTK_EXPAND,
-      0, 0);
-#endif
 }
 

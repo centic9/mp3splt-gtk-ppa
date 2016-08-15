@@ -3,7 +3,7 @@
  * mp3splt-gtk -- utility based on mp3splt,
  *                for mp3/ogg splitting without decoding
  *
- * Copyright: (C) 2005-2013 Alexandru Munteanu
+ * Copyright: (C) 2005-2014 Alexandru Munteanu
  * Contact: m@ioalex.net
  *
  * http://mp3splt.sourceforge.net/
@@ -42,14 +42,14 @@
 #include "all_includes.h"
 
 void split_action(ui_state *ui);
-GThread *create_thread(GThreadFunc func, ui_state *ui);
-GThread *create_thread_with_fname(GThreadFunc func, ui_with_fname *ui_fname);
-void enter_threads();
-void exit_threads();
-gboolean exit_application(GtkWidget *widget, GdkEvent  *event, gpointer data);
-void exit_application_bis(GtkWidget *widget, gpointer data);
+void create_thread_and_unref(GThreadFunc func, gpointer data, ui_state *ui, const char *name);
+GThread *create_thread(GThreadFunc func, gpointer data, ui_state *ui, const char *name);
 
-#define MP3SPLT_GTK_DATE "20/07/13"
+void add_idle(gint priority, GSourceFunc function, gpointer data, GDestroyNotify notify);
+
+gboolean exit_application(GtkWidget *widget, GdkEvent  *event, gpointer data);
+
+#define MP3SPLT_GTK_DATE "09/11/14"
 
 #endif
 

@@ -3,7 +3,7 @@
  * mp3splt-gtk -- utility based on mp3splt,
  *                for mp3/ogg splitting without decoding
  *
- * Copyright: (C) 2005-2013 Alexandru Munteanu
+ * Copyright: (C) 2005-2014 Alexandru Munteanu
  * Contact: m@ioalex.net
  *
  * http://mp3splt.sourceforge.net/
@@ -38,9 +38,9 @@
  * start of the program.
  ********************************************************/
 
-#include "preferences_manager.h"
-
 #include "all_includes.h"
+
+#include "preferences_manager.h"
 
 static void check_pref_file_and_write_default(ui_state *ui);
 static void pm_free_spinner_int_preferences(GArray *spinner_int_preferences);
@@ -275,6 +275,10 @@ void load_preferences(ui_state *ui)
   item = g_key_file_get_boolean(key_file, "split", "frame_mode", NULL);
   gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(ui->gui->frame_mode), item);
 
+  //bit reservoir mode
+  item = g_key_file_get_boolean(key_file, "split", "bit_reservoir_mode", NULL);
+  gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(ui->gui->bit_reservoir_mode), item);
+
   //adjust mode
   item = g_key_file_get_boolean(key_file, "split", "adjust_mode", NULL);
   gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(ui->gui->adjust_mode), item);
@@ -503,6 +507,9 @@ void save_preferences(ui_state *ui)
   g_key_file_set_boolean(my_key_file, "split", "frame_mode",
       gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(ui->gui->frame_mode)));
 
+  g_key_file_set_boolean(my_key_file, "split", "bit_reservoir_mode",
+      gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(ui->gui->bit_reservoir_mode)));
+
   //adjust mode
   g_key_file_set_boolean(my_key_file, "split", "adjust_mode",
       gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(ui->gui->adjust_mode)));
@@ -583,7 +590,7 @@ void save_preferences(ui_state *ui)
       get_checked_tags_version_radio_box(ui->gui));
 
   //type of split: split mode
-  g_key_file_set_integer(my_key_file, "split", "split_mode", get_selected_split_mode_safe(ui));
+  g_key_file_set_integer(my_key_file, "split", "split_mode", get_selected_split_mode(ui));
   //time value
   g_key_file_set_integer(my_key_file, "split", "split_mode_time_value",
       gtk_spin_button_get_value_as_int(GTK_SPIN_BUTTON(ui->gui->spinner_time)));
@@ -671,6 +678,11 @@ static void write_default_preferences_file(ui_state *ui)
   if (!g_key_file_has_key(my_key_file, "split", "frame_mode",NULL))
   {
     g_key_file_set_boolean(my_key_file, "split", "frame_mode", FALSE);
+  }
+
+  if (!g_key_file_has_key(my_key_file, "split", "bit_reservoir_mode",NULL))
+  {
+    g_key_file_set_boolean(my_key_file, "split", "bit_reservoir_mode", FALSE);
   }
 
   //adjust mode

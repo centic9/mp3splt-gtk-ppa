@@ -3,7 +3,7 @@
  * mp3splt-gtk -- utility based on mp3splt,
  *                for mp3/ogg splitting without decoding
  *
- * Copyright (c) 2005-2013 Alexandru Munteanu - m@ioalex.net
+ * Copyright (c) 2005-2014 Alexandru Munteanu - m@ioalex.net
  *
  * http://mp3splt.sourceforge.net/
  *
@@ -44,6 +44,13 @@
 #define ICON_EXT ".svg"
 
 #define DEFAULT_TIMEOUT_VALUE 200
+
+#define DEFAULT_GSTREAMER_STOP_BEFORE_END_VALUE 200
+
+#define DEFAULT_SMALL_SEEK_JUMP_VALUE 300
+#define DEFAULT_SEEK_JUMP_VALUE 0
+#define DEFAULT_BIG_SEEK_JUMP_VALUE 0
+
 #define DEFAULT_SILENCE_WAVE_NUMBER_OF_POINTS_THRESHOLD 4000
 
 //float comparison
@@ -66,7 +73,7 @@ void connect_to_player_with_song(gint i, ui_state *ui);
 void connect_button_event(GtkWidget *widget, ui_state *ui);
 void disconnect_button_event(GtkWidget *widget, ui_state *ui);
 void pause_event(GtkWidget *widget, ui_state *ui);
-void refresh_drawing_area(gui_state *gui);
+void refresh_drawing_area(gui_state *gui, ui_infos *infos);
 gfloat get_right_drawing_time(gfloat current_time, gfloat total_time, gfloat zoom_coeff);
 gfloat get_left_drawing_time(gfloat current_time, gfloat total_time, gfloat zoom_coeff);
 

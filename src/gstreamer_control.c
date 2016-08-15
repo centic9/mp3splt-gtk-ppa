@@ -3,7 +3,7 @@
  * mp3splt-gtk -- utility based on mp3splt,
  *                for mp3/ogg splitting without decoding
  *
- * Copyright: (C) 2005-2013 Alexandru Munteanu
+ * Copyright: (C) 2005-2014 Alexandru Munteanu
  * Contact: m@ioalex.net
  *
  * from BMP to Audacious patch from Roberto Neri - 2007,2008
@@ -48,8 +48,6 @@
 //! Send a call over the dbus
 static gboolean bus_call(GstBus *bus, GstMessage *msg, gpointer data)
 {
-  enter_threads();
-
   ui_state *ui = (ui_state *) data;
 
   switch (GST_MESSAGE_TYPE(msg))
@@ -72,7 +70,7 @@ static gboolean bus_call(GstBus *bus, GstMessage *msg, gpointer data)
           memset(message,'\0',malloc_size);
           g_snprintf(message, malloc_size,_("gstreamer error: %s"),error->message);
 
-          put_status_message(message, ui);
+          put_status_message_in_idle(message, ui);
 
           g_free(message);
         }
@@ -98,7 +96,7 @@ static gboolean bus_call(GstBus *bus, GstMessage *msg, gpointer data)
           memset(message,'\0',malloc_size);
           g_snprintf(message, malloc_size,_("Warning: %s"),error->message);
 
-          put_status_message(message, ui);
+          put_status_message_in_idle(message, ui);
 
           g_free(message);
         }
@@ -124,7 +122,7 @@ static gboolean bus_call(GstBus *bus, GstMessage *msg, gpointer data)
           memset(message,'\0',malloc_size);
           g_snprintf(message, malloc_size,_("Info: %s"),error->message);
 
-          put_status_message(message, ui);
+          put_status_message_in_idle(message, ui);
 
           g_free(message);
         }
@@ -168,12 +166,10 @@ static gboolean bus_call(GstBus *bus, GstMessage *msg, gpointer data)
       break;
   }
 
-  exit_threads();
-
   return TRUE;
 }
 
-//!Gets information about the< song
+//!Gets information about the song
 void gstreamer_get_song_infos(gchar *total_infos, ui_state *ui)
 {
   if (!ui->pi->play)
@@ -184,12 +180,8 @@ void gstreamer_get_song_infos(gchar *total_infos, ui_state *ui)
   gint freq = 0;
   gint nch = 0;
 
-  gint number_of_stream = 0;
-  g_object_get(ui->pi->play, "current-audio", &number_of_stream, NULL);
-
-  //get the stream info
-  GList *streaminfo = NULL;
-  g_object_get(ui->pi->play, "stream-info", &streaminfo, NULL);
+  gint current_audio_stream = 0;
+  g_object_get(ui->pi->play, "current-audio", &current_audio_stream, NULL);
 
   gchar rate_str[32] = { '\0' };
   gchar freq_str[32] = { '\0' };
@@ -198,27 +190,24 @@ void gstreamer_get_song_infos(gchar *total_infos, ui_state *ui)
   gchar *_Kbps = _("Kbps");
   gchar *_Khz = _("Khz");
 
-  GObject *object = g_list_nth_data(streaminfo, number_of_stream); 
-  if (object)
+  GstCaps *caps = NULL;
+
+  GstPad *pad = NULL;
+  g_signal_emit_by_name(ui->pi->play, "get-audio-pad", current_audio_stream, &pad);
+  if (pad)
   {
-    GstObject *obj = NULL; 
-    g_object_get(G_OBJECT(object), "object", &obj, NULL);
+    caps = gst_pad_get_current_caps(pad);
+  }
 
-    //get the caps from the first element
-    GstCaps *caps = NULL;
-    g_object_get(obj, "caps", &caps, NULL);
-    if (caps)
-    {
-      //get the structure from the caps
-      GstStructure *structure = NULL;
-      structure = gst_caps_get_structure(caps, number_of_stream);
+  if (caps)
+  {
+    GstStructure *structure = NULL;
+    structure = gst_caps_get_structure(caps, 0);
 
-      //get the rate and the number of channels from the structure
-      gst_structure_get_int(structure, "rate", &freq);
-      gst_structure_get_int(structure, "channels", &nch);
+    gst_structure_get_int(structure, "rate", &freq);
+    gst_structure_get_int(structure, "channels", &nch);
 
-      gst_caps_unref(caps);
-    }
+    gst_caps_unref(caps);
 
     g_snprintf(rate_str, 32, "%d", ui->pi->rate / 1000);
     g_snprintf(freq_str, 32, "%d", freq / 1000);
@@ -359,11 +348,7 @@ void gstreamer_start(ui_state *ui)
 
   gst_init(NULL, NULL);
 
-#ifdef __WIN32__
-  gst_default_registry_add_path("./");
-#endif
-
-  ui->pi->play = gst_element_factory_make("playbin", "play");
+  ui->pi->play = gst_element_factory_make("playbin", "playbin");
   if (!ui->pi->play)
   {
     put_status_message(_(" error: cannot create gstreamer playbin\n"), ui);
@@ -410,6 +395,10 @@ void gstreamer_add_files(GList *list, ui_state *ui)
     return;
   }
 
+  GstState state;
+  gst_element_get_state(ui->pi->play, &state, NULL, GST_CLOCK_TIME_NONE);
+  gst_element_set_state(ui->pi->play, GST_STATE_NULL);
+
   gint i = 0;
   gchar *song = NULL;
   while ((song = g_list_nth_data(list, i)) != NULL)
@@ -427,6 +416,15 @@ void gstreamer_add_files(GList *list, ui_state *ui)
     if (uri) { g_free(uri); }
 
     i++;
+  }
+
+  if (state == GST_STATE_PLAYING)
+  {
+    gst_element_set_state(ui->pi->play, GST_STATE_PLAYING);
+  }
+  else if (state == GST_STATE_PAUSED)
+  {
+    gst_element_set_state(ui->pi->play, GST_STATE_PAUSED);
   }
 }
 
@@ -531,12 +529,17 @@ void gstreamer_pause(ui_state *ui)
 
   if (state == GST_STATE_PLAYING)
   {
+    //gint time = gstreamer_get_time_elapsed(ui);
+
     gst_element_set_state(ui->pi->play, GST_STATE_PAUSED);
+
+    /*gst_element_seek(ui->pi->play,
+        1.0, GST_FORMAT_TIME, GST_SEEK_FLAG_FLUSH,
+        GST_SEEK_TYPE_SET, time * GST_MSECOND, 0, 0);*/
+    return;
   }
-  else
-  {
-    gstreamer_play(ui);
-  }
+
+  gstreamer_play(ui);
 }
 
 //!changes to next song

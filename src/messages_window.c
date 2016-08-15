@@ -3,7 +3,7 @@
  * mp3splt-gtk -- utility based on mp3splt,
  *                for mp3/ogg splitting without decoding
  *
- * Copyright: (C) 2005-2013 Alexandru Munteanu
+ * Copyright: (C) 2005-2014 Alexandru Munteanu
  * Contact: m@ioalex.net
  *
  * http://mp3splt.sourceforge.net/
@@ -53,7 +53,7 @@ void put_message_in_history(const gchar *message, splt_message_type mess_type, u
 {
   gui_state *gui = ui->gui;
 
-  if (mess_type == SPLT_MESSAGE_INFO ||
+  if (mess_type == SPLT_MESSAGE_INFO || mess_type == SPLT_MESSAGE_WARNING ||
       (mess_type == SPLT_MESSAGE_DEBUG && ui->infos->debug_is_active))
   {
     GtkTextTag *gray_tag = gtk_text_tag_table_lookup(gui->mess_hist_tag_table, "gray_bold");
@@ -150,7 +150,7 @@ static GtkWidget *create_text_component(ui_state *ui)
   gtk_box_pack_start(GTK_BOX(hbox), debug_check_button, FALSE, FALSE, 0);
 
   //clear button
-  GtkWidget *clear_button = wh_create_cool_button(GTK_STOCK_CLEAR, _("C_lear"), FALSE);
+  GtkWidget *clear_button = wh_create_cool_button("edit-clear", _("C_lear"), FALSE);
   g_signal_connect(G_OBJECT(clear_button), "clicked", G_CALLBACK(clear_messages_event), ui);
   gtk_box_pack_end(GTK_BOX(hbox), clear_button, FALSE, FALSE, 0);
 

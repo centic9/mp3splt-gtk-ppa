@@ -3,7 +3,7 @@
  * mp3splt-gtk -- utility based on mp3splt,
  *                for mp3/ogg splitting without decoding
  *
- * Copyright: (C) 2005-2013 Alexandru Munteanu
+ * Copyright: (C) 2005-2014 Alexandru Munteanu
  * Contact: m@ioalex.net
  *
  * http://mp3splt.sourceforge.net/
@@ -57,9 +57,11 @@
 
 void remove_status_message(gui_state *gui);
 void put_status_message(const gchar *text, ui_state *ui);
-void put_status_message_with_type(const gchar *text,
-    splt_message_type mess_type, ui_state *ui);
-void create_application();
+void put_status_message_with_type(const gchar *text, splt_message_type mess_type, 
+    ui_state *ui);
+void put_status_message_in_idle(const gchar *text, ui_state *ui);
+
+void create_application(ui_state *ui);
 void print_status_bar_confirmation(gint error, ui_state *ui);
 void cancel_button_event(GtkWidget *widget, ui_state *ui);
 
@@ -76,8 +78,8 @@ void set_stop_split_safe(gboolean value, ui_state *ui);
 gint get_is_splitting_safe(ui_state *ui);
 void set_is_splitting_safe(gboolean value, ui_state *ui);
 
-void set_split_file_mode_safe(gint file_mode, ui_state *ui);
-gint get_split_file_mode_safe(ui_state *ui);
+void set_split_file_mode(gint file_mode, ui_state *ui);
+gint get_split_file_mode(ui_state *ui);
 
 void set_process_in_progress_and_wait_safe(gboolean value, ui_state *ui);
 void set_process_in_progress_safe(gboolean value, ui_state *ui);
