@@ -1,3 +1,9 @@
+mp3splt-gtk (0.9-0ubuntu0~ppa9) xenial; urgency=medium
+
+  * Try with libgstreamer-plugins-base1.0-dev for Yakkety build.
+
+ -- Dominik Stadler (Ubuntu key) <dominik.stadler@gmx.at>  Mon, 15 Aug 2016 09:50:15 +0200
+
 mp3splt-gtk (0.9-0ubuntu0~ppa8) xenial; urgency=medium
 
   * Re-upload for Xenial.
