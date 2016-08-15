@@ -3,7 +3,7 @@
  * mp3splt-gtk -- utility based on mp3splt,
  *                for mp3/ogg splitting without decoding
  *
- * Copyright: (C) 2005-2013 Alexandru Munteanu
+ * Copyright: (C) 2005-2014 Alexandru Munteanu
  * Contact: m@ioalex.net
  *
  * http://mp3splt.sourceforge.net/
@@ -34,21 +34,21 @@
 
 void init_mutex(SPLT_MUTEX *mutex)
 {
-  g_static_mutex_init(mutex);
+  g_mutex_init(mutex);
 }
 
 void clear_mutex(SPLT_MUTEX *mutex)
 {
-  g_static_mutex_free(mutex);
+  g_mutex_clear(mutex);
 }
 
 void lock_mutex(SPLT_MUTEX *mutex)
 {
-  g_static_mutex_lock(mutex);
+  g_mutex_lock(mutex);
 }
 
 void unlock_mutex(SPLT_MUTEX *mutex)
 {
-  g_static_mutex_unlock(mutex);
+  g_mutex_unlock(mutex);
 }
 

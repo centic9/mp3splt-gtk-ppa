@@ -3,7 +3,7 @@
  * mp3splt-gtk -- utility based on mp3splt,
  *                for mp3/ogg splitting without decoding
  *
- * Copyright (c) 2005-2013 Alexandru Munteanu - m@ioalex.net
+ * Copyright (c) 2005-2014 Alexandru Munteanu - m@ioalex.net
  *
  * http://mp3splt.sourceforge.net/
  *
@@ -46,6 +46,13 @@ gchar *transform_to_utf8(gchar *text, gint free_or_not, gint *must_be_freed);
 void build_path(GString *path, const gchar *dir, const gchar *filename);
 
 gboolean double_equals(gdouble double_to_compare, gdouble compared_value);
+
+//points and tags utilities
+
+points_and_tags *new_points_and_tags();
+void free_points_and_tags();
+void append_point_to_pat(splt_point *point, points_and_tags *pat);
+void append_tags_to_pat(splt_tags *tags, points_and_tags *pat);
 
 #endif
 

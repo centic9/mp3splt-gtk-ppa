@@ -3,7 +3,7 @@
  * mp3splt-gtk -- utility based on mp3splt,
  *                for mp3/ogg splitting without decoding
  *
- * Copyright: (C) 2005-2013 Alexandru Munteanu
+ * Copyright: (C) 2005-2014 Alexandru Munteanu
  * Contact: m@ioalex.net
  *
  * http://mp3splt.sourceforge.net/
@@ -40,7 +40,7 @@
 #include "split_mode_window.h"
 
 //! Get the split mode
-static gint get_selected_split_mode(GtkToggleButton *radio_b)
+static gint get_selected_split_mode_(GtkToggleButton *radio_b)
 {
   GSList *radio_button_list = gtk_radio_button_get_group(GTK_RADIO_BUTTON(radio_b));
 
@@ -76,19 +76,14 @@ void select_split_mode(int split_mode, ui_state *ui)
   }
 }
 
-gint get_selected_split_mode_safe(ui_state *ui)
+gint get_selected_split_mode(ui_state *ui)
 {
-  lock_mutex(&ui->variables_mutex);
-  gint selected_split_mode = ui->status->selected_split_mode;
-  unlock_mutex(&ui->variables_mutex);
-  return selected_split_mode;
+  return ui->status->selected_split_mode;
 }
 
-void set_selected_split_mode_safe(gint value, ui_state *ui)
+void set_selected_split_mode(gint value, ui_state *ui)
 {
-  lock_mutex(&ui->variables_mutex);
   ui->status->selected_split_mode = value;
-  unlock_mutex(&ui->variables_mutex);
 }
 
 static void deactivate_silence_parameters(gui_state *gui)
@@ -136,8 +131,8 @@ static void activate_trim_parameters(gui_state *gui)
 //! Issued when the split mode selection changed
 static void split_mode_changed(GtkToggleButton *radio_b, ui_state *ui)
 {
-  gint selected_split_mode = get_selected_split_mode(radio_b);
-  set_selected_split_mode_safe(selected_split_mode, ui);
+  gint selected_split_mode = get_selected_split_mode_(radio_b);
+  set_selected_split_mode(selected_split_mode, ui);
 
   int enable_time = (selected_split_mode == SELECTED_SPLIT_TIME);
   gtk_widget_set_sensitive(ui->gui->spinner_time, enable_time);
@@ -428,12 +423,47 @@ static GtkWidget *create_split_mode(ui_state *ui)
   g_object_set_data(G_OBJECT(split_mode_radio_button), "split_type_id",
       GINT_TO_POINTER(SELECTED_SPLIT_ERROR));
  
+  //internal sheet mode split
+  split_mode_radio_button = gtk_radio_button_new_with_label_from_widget
+    (GTK_RADIO_BUTTON(split_mode_radio_button), _("Internal sheet mode (CUE sheet for FLAC and ID3v2 chapters for MP3)"));
+  gtk_widget_set_tooltip_text(split_mode_radio_button, _("Split using internal sheet"));
+  ui->gui->split_mode_radio_button = split_mode_radio_button;
+  gtk_box_pack_start(GTK_BOX(local_vbox), split_mode_radio_button, FALSE, FALSE, 2);
+  g_signal_connect(GTK_TOGGLE_BUTTON(split_mode_radio_button), "toggled",
+      G_CALLBACK(split_mode_changed), ui);
+  g_object_set_data(G_OBJECT(split_mode_radio_button), "split_type_id",
+      GINT_TO_POINTER(SELECTED_SPLIT_INTERNAL_SHEET));
+ 
+  //CUE file with the same name as the input file
+  split_mode_radio_button = gtk_radio_button_new_with_label_from_widget
+    (GTK_RADIO_BUTTON(split_mode_radio_button), _("Use CUE file with similar name as the input file"));
+  gtk_widget_set_tooltip_text(split_mode_radio_button,
+      _("Split using CUE file having similar name as the input file\n"
+        "Example: test.cue will be looked for when splitting test.mp3"));
+  ui->gui->split_mode_radio_button = split_mode_radio_button;
+  gtk_box_pack_start(GTK_BOX(local_vbox), split_mode_radio_button, FALSE, FALSE, 2);
+  g_signal_connect(GTK_TOGGLE_BUTTON(split_mode_radio_button), "toggled",
+      G_CALLBACK(split_mode_changed), ui);
+  g_object_set_data(G_OBJECT(split_mode_radio_button), "split_type_id",
+      GINT_TO_POINTER(SELECTED_SPLIT_CUE_FILE));
+
+  //CDDB file with the same name as the input file
+  split_mode_radio_button = gtk_radio_button_new_with_label_from_widget
+    (GTK_RADIO_BUTTON(split_mode_radio_button), _("Use CDDB file with similar name as the input file"));
+  gtk_widget_set_tooltip_text(split_mode_radio_button,
+      _("Split using CDDB file having similar name as the input file\n"
+        "Example: test.cddb will be looked for when splitting test.mp3"));
+  ui->gui->split_mode_radio_button = split_mode_radio_button;
+  gtk_box_pack_start(GTK_BOX(local_vbox), split_mode_radio_button, FALSE, FALSE, 2);
+  g_signal_connect(GTK_TOGGLE_BUTTON(split_mode_radio_button), "toggled",
+      G_CALLBACK(split_mode_changed), ui);
+  g_object_set_data(G_OBJECT(split_mode_radio_button), "split_type_id",
+      GINT_TO_POINTER(SELECTED_SPLIT_CDDB_FILE));
+
   select_split_mode(SELECTED_SPLIT_NORMAL, ui);
 
   GtkWidget *scrolled_window = wh_create_scrolled_window();
-  gtk_scrolled_window_add_with_viewport(GTK_SCROLLED_WINDOW(scrolled_window), 
-      GTK_WIDGET(local_vbox));
-
+  wh_add_box_to_scrolled_window(local_vbox, scrolled_window);
   return scrolled_window;
 }
 
@@ -458,11 +488,7 @@ GtkWidget *create_special_split_page(ui_state *ui)
 {
   GtkWidget *vbox = wh_vbox_new();;
 
-#if GTK_MAJOR_VERSION <= 2
-  GtkWidget *paned_widget = gtk_vpaned_new();
-#else
   GtkWidget *paned_widget = gtk_paned_new(GTK_ORIENTATION_VERTICAL);
-#endif
 
   gtk_box_pack_start(GTK_BOX(vbox), paned_widget, TRUE, TRUE, 0);
 

@@ -3,7 +3,7 @@
  * mp3splt-gtk -- utility based on mp3splt,
  *                for mp3/ogg splitting without decoding
  *
- * Copyright: (C) 2005-2013 Alexandru Munteanu
+ * Copyright: (C) 2005-2014 Alexandru Munteanu
  * Contact: m@ioalex.net
  *
  * http://mp3splt.sourceforge.net/
@@ -39,8 +39,11 @@ GtkWidget *wh_set_title_and_get_vbox(GtkWidget *widget, const gchar *title);
 
 void wh_put_in_hbox_and_attach_to_vbox(GtkWidget *widget, GtkWidget *vbox, gint vertical_margin);
 GtkWidget *wh_put_in_new_hbox_with_margin_level(GtkWidget *widget, gint margin_level);
+GtkWidget *wh_put_in_new_hbox(GtkWidget *widget, gint margin, gboolean expand, gboolean fill);
 void wh_put_in_hbox_and_attach_to_vbox_with_bottom_margin(GtkWidget *widget, GtkWidget *vbox,
     gint vertical_margin, gint bottom_margin);
+
+void wh_add_box_to_scrolled_window(GtkWidget *box, GtkWidget *scrolled_window);
 
 GtkWidget *wh_new_table();
 void wh_add_in_table(GtkWidget *table, GtkWidget *widget);

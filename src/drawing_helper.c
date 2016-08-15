@@ -3,7 +3,7 @@
  * mp3splt-gtk -- utility based on mp3splt,
  *                for mp3/ogg splitting without decoding
  *
- * Copyright: (C) 2005-2013 Alexandru Munteanu
+ * Copyright: (C) 2005-2014 Alexandru Munteanu
  * Contact: m@ioalex.net
  *
  * http://mp3splt.sourceforge.net/
@@ -33,7 +33,12 @@
 
 void dh_set_color(cairo_t *cairo, GdkColor *color)
 {
-  gdk_cairo_set_source_color(cairo, color);
+  GdkRGBA rgba_color;
+  rgba_color.red = ((double) color->red) / 65535.0;
+  rgba_color.green = ((double) color->green) / 65535.0;
+  rgba_color.blue = ((double) color->blue) / 65535.0;
+  rgba_color.alpha = 1.0;
+  gdk_cairo_set_source_rgba(cairo, &rgba_color);
 }
 
 void dh_set_white_color(cairo_t *cairo_surface)

@@ -3,7 +3,7 @@
  * mp3splt-gtk -- utility based on mp3splt,
  *                for mp3/ogg splitting without decoding
  *
- * Copyright: (C) 2005-2013 Alexandru Munteanu
+ * Copyright: (C) 2005-2014 Alexandru Munteanu
  * Contact: m@ioalex.net
  *
  * http://mp3splt.sourceforge.net/
@@ -83,9 +83,8 @@ void print_processing_file(gchar *filename, ui_state *ui)
 {
   gint fname_status_size = (strlen(filename) + 255);
   gchar *fname_status = g_malloc(sizeof(char) * fname_status_size);
-  g_snprintf(fname_status, fname_status_size,
-      _("Processing file '%s' ..."), filename);
-  put_status_message(fname_status, ui);
+  g_snprintf(fname_status, fname_status_size, _("Processing file '%s' ..."), filename);
+  put_status_message_in_idle(fname_status, ui);
   if (fname_status)
   {
     free(fname_status);
@@ -179,4 +178,34 @@ gboolean double_equals(gdouble double_to_compare, gdouble compared_value)
   return fabs(double_to_compare - compared_value) < DOUBLE_PRECISION;
 }
 
+//points and tags utilities
+
+points_and_tags *new_points_and_tags()
+{
+  points_and_tags *pat = g_malloc(sizeof(points_and_tags));
+  pat->splitpoints = g_ptr_array_new();
+  pat->tags = g_ptr_array_new();
+  return pat;
+}
+
+void free_points_and_tags(points_and_tags **pat)
+{
+  if (!pat || !*pat) { return; }
+  g_ptr_array_free((*pat)->splitpoints, SPLT_TRUE);
+  (*pat)->splitpoints = NULL;
+  g_ptr_array_free((*pat)->tags, SPLT_TRUE);
+  (*pat)->tags = NULL;
+  g_free(*pat);
+  *pat = NULL;
+}
+
+void append_point_to_pat(splt_point *point, points_and_tags *pat)
+{
+  g_ptr_array_add(pat->splitpoints, point);
+}
+
+void append_tags_to_pat(splt_tags *tags, points_and_tags *pat)
+{
+  g_ptr_array_add(pat->tags, tags);
+}
 

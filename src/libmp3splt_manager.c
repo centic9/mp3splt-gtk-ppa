@@ -3,7 +3,7 @@
  * mp3splt-gtk -- utility based on mp3splt,
  *                for mp3/ogg splitting without decoding
  *
- * Copyright: (C) 2005-2013 Alexandru Munteanu
+ * Copyright: (C) 2005-2014 Alexandru Munteanu
  * Contact: m@ioalex.net
  *
  * http://mp3splt.sourceforge.net/
@@ -81,14 +81,6 @@ static gboolean lmanager_put_split_filename_idle(ui_with_fname *ui_fname)
   gtk_widget_set_sensitive(ui->gui->queue_files_button, TRUE);
   gtk_widget_set_sensitive(ui->gui->remove_all_files_button, TRUE);
 
-#ifdef __WIN32__
-  while (gtk_events_pending())
-  {
-    gtk_main_iteration();
-  }
-  gdk_flush();
-#endif
-
   if (filename)
   {
     g_free(filename);
@@ -111,7 +103,7 @@ void lmanager_put_split_filename(const char *filename, void *data)
     ui_fname->fname = strdup(filename);
   }
 
-  gdk_threads_add_idle_full(G_PRIORITY_HIGH_IDLE,
+  add_idle(G_PRIORITY_HIGH_IDLE,
       (GSourceFunc)lmanager_put_split_filename_idle, ui_fname, NULL);
 }
 
@@ -134,14 +126,6 @@ static gboolean lmanager_put_message_from_library_idle(ui_with_message *ui_messa
     }
 
     put_status_message_with_type(mess, mess_type, ui);
-
-#ifdef __WIN32__
-    while (gtk_events_pending())
-    {
-      gtk_main_iteration();
-    }
-    gdk_flush();
-#endif
 
     g_free(mess);
     mess = NULL;
@@ -166,7 +150,7 @@ static void lmanager_put_message_from_library(const char *message, splt_message_
   }
   ui_message->mess_type = mess_type;
 
-  gdk_threads_add_idle_full(G_PRIORITY_HIGH_IDLE,
+  add_idle(G_PRIORITY_HIGH_IDLE,
       (GSourceFunc)lmanager_put_message_from_library_idle, ui_message, NULL);
 }
 
@@ -216,14 +200,6 @@ static gboolean lmanager_change_window_progress_bar_idle(ui_with_p_bar *ui_p_bar
   gtk_progress_bar_set_fraction(ui->gui->percent_progress_bar, ui_p_bar->percent_progress);
   gtk_progress_bar_set_text(ui->gui->percent_progress_bar, printed_value);
 
-#ifdef __WIN32__
-  while (gtk_events_pending())
-  {
-    gtk_main_iteration();
-  }
-  gdk_flush();
-#endif
-
   if (ui_p_bar->filename_shorted)
   {
     g_free(ui_p_bar->filename_shorted);
@@ -249,7 +225,7 @@ static void lmanager_change_window_progress_bar(splt_progress *p_bar, void *data
   ui_p_bar->silence_db_level = mp3splt_progress_get_silence_db_level(p_bar);
   ui_p_bar->percent_progress = mp3splt_progress_get_percent_progress(p_bar);
 
-  gdk_threads_add_idle_full(G_PRIORITY_HIGH_IDLE,
+  add_idle(G_PRIORITY_HIGH_IDLE,
       (GSourceFunc)lmanager_change_window_progress_bar_idle, ui_p_bar, NULL);
 }
 

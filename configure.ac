@@ -4,7 +4,7 @@
 # *                for mp3/ogg splitting without decoding
 # *
 # * Copyright (c) 2002-2005 M. Trotta - <mtrotta@users.sourceforge.net>
-# * Copyright (c) 2005-2013 Munteanu Alexandru - m@ioalex.net
+# * Copyright (c) 2005-2014 Munteanu Alexandru - m@ioalex.net
 # *
 # * http://mp3splt.sourceforge.net
 # *
@@ -32,10 +32,10 @@
 # Basic initialisations 
 #################################################
 
-m4_define([minimum_libmp3splt_version],[0.9.0])
+m4_define([minimum_libmp3splt_version],[0.9.2])
 
 AC_PREREQ(2.62)
-AC_INIT(mp3splt-gtk, 0.9, mp3splt.sf.net)
+AC_INIT(mp3splt-gtk, 0.9.2, mp3splt.sf.net)
 
 # tell autoconf where to put the temporary files and scripts
 # it generates. Seems to be more clean to put them into a subdir;
@@ -97,8 +97,8 @@ case $host in
 		;;
 	*openbsd*)
 		HOST="OpenBSD"
-		LIBS="$LIBS `pkg-config --libs gtk+-2.0` -lpthread"
-		CFLAGS="$CFLAGS `pkg-config --cflags gtk+-2.0`"
+		LIBS="$LIBS `pkg-config --libs gtk+-3.0` -lpthread"
+		CFLAGS="$CFLAGS `pkg-config --cflags gtk+-3.0`"
 		;;
 	*netbsd*)
 		HOST="NetBSD"
@@ -136,48 +136,16 @@ AC_CHECK_LIB(ltdl, lt_dlopen, [ hasltdl="yes" ], [ AC_MSG_ERROR([libltdl not fou
 
 #################################################
 
-#enable/disable gtk3
+audacious_check="audclient >= 3.0"
 
-AC_ARG_ENABLE(gtk3, [
- AC_HELP_STRING([--enable-gtk3],  [Compile against GTK 3.x explicitly (default: use GTK 3.x if available)])
- AC_HELP_STRING([--disable-gtk3], [Compile against GTK 2.x explicitly (default: use GTK 3.x if available)])],
-     [enable_gtk3=$enableval],[enable_gtk3="auto"])
-
-#we must keep this as the first call to PKG_CHECK_MODULES in order to force the searching of pkg-config
-PKG_CHECK_MODULES(FAKE_GTK, [gtk+-3.0], [pkg_config_found=yes], [pkg_config_found=no])
- 
-if test "x$enable_gtk3" = xauto; then
-  #auto gtk version detection
-  AC_MSG_NOTICE([selecting GTK 2.x/3.x automatically])
-
-  PKG_CHECK_MODULES(GTK, [gtk+-3.0 >= 3.0],
-    [enable_gtk3=yes], [enable_gtk3=no])
-fi
-
-audacious_check="audclient < 3.0"
-if test "x$enable_gtk3" = xyes; then
-  #gtk 3.x check
-  AC_MSG_NOTICE([GTK 3.x selected])
-
-  PKG_CHECK_MODULES(GTK, [gtk+-3.0 >= 3.0],
-  [
-    CFLAGS="$CFLAGS -DGTK_DISABLE_SINGLE_INCLUDES -DGDK_DISABLE_DEPRECATED -DGTK_DISABLE_DEPRECATED -DGSEAL_ENABLE"
-    audacious_check="audclient >= 3.0"
-  ],
-  [
-    AC_MSG_ERROR([Cannot find GTK >= 3.0])
-  ])
-else
-  #gtk 2.x check
-  AC_MSG_NOTICE([GTK 2.x selected])
-
-  PKG_CHECK_MODULES(GTK, [gtk+-2.0 >= 2.18],
-  [ ],
-  [
-    AC_MSG_ERROR([Cannot find GTK >= 2.18])
-  ])
-fi
-
+PKG_CHECK_MODULES(GTK, [gtk+-3.0 >= 3.4.2],
+[
+  CFLAGS="$CFLAGS -DGTK_DISABLE_SINGLE_INCLUDES -DGDK_DISABLE_DEPRECATED -DGTK_DISABLE_DEPRECATED -DGSEAL_ENABLE"
+  #CFLAGS="$CFLAGS -DGTK_DISABLE_SINGLE_INCLUDES -DGSEAL_ENABLE"
+],
+[
+  AC_MSG_ERROR([Cannot find GTK >= 3.4.2])
+])
 
 #################################################
 # Initialize the gnome integration
@@ -236,9 +204,7 @@ if test "x$enable_audacious" = xyes;then
       [AC_MSG_ERROR([Audacious player development files for $audacious_check not found.
 
     Install it or configure with "--disable-audacious".
-    Also check that if you want to compile with GTK 3.x, you will need audacious >= 3.0.
-    For GTK 2.x, you will need audacious < 3.0.
-    You can force the GTK version using --enable-gtk3 and --disable-gtk3.
+    If you want to compile with GTK 3.x, you need audacious >= 3.0.
 ]) ])
   PKG_CHECK_MODULES(DBUS_GLIB, dbus-glib-1)
 fi
@@ -254,11 +220,9 @@ AC_ARG_ENABLE(gstreamer, AC_HELP_STRING([--disable-gstreamer], [Disable gstreame
     [enable_gstreamer=$enableval],[enable_gstreamer="yes"])
 
 if test "x$enable_gstreamer" = xyes;then
-  PKG_CHECK_MODULES(GST, [gstreamer-0.10 >= 0.10
-      gstreamer-base-0.10 >= 0.10
-      gstreamer-plugins-base-0.10 >= 0.10],
+  PKG_CHECK_MODULES(GST, [gstreamer-1.0 >= 1.0],
       [AM_CONDITIONAL(GSTREAMER,true) gstreamer="yes"],
-      [AC_MSG_ERROR([GStreamer >= 0.10 development files are not installed.
+      [AC_MSG_ERROR([GStreamer >= 1.0 development files are not installed.
 
     Install it or configure with "--disable-gstreamer".])])
 fi

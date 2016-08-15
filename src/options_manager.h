@@ -3,7 +3,7 @@
  * mp3splt-gtk -- utility based on mp3splt,
  *                for mp3/ogg splitting without decoding
  *
- * Copyright: (C) 2005-2013 Alexandru Munteanu
+ * Copyright: (C) 2005-2014 Alexandru Munteanu
  * Contact: m@ioalex.net
  *
  *
@@ -36,9 +36,12 @@
 
 #include "all_includes.h"
 
-void update_output_options(ui_state *ui);
-void put_options_from_preferences(ui_state *ui);
-void put_tags_from_filename_regex_options(ui_state *ui);
+void update_output_options(ui_state *ui, gboolean is_checked_output_radio_box, gchar *output_format);
+void put_options_from_preferences(ui_for_split *ui_fs);
+void put_tags_from_filename_regex_options(ui_for_split *ui_fs);
+
+ui_for_split *build_ui_for_split(ui_state *ui);
+void free_ui_for_split(ui_for_split *ui_fs);
 
 #endif
 

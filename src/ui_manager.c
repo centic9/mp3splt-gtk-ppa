@@ -3,7 +3,7 @@
  * mp3splt-gtk -- utility based on mp3splt,
  *                for mp3/ogg splitting without decoding
  *
- * Copyright (c) 2005-2013 Alexandru Munteanu - m@ioalex.net
+ * Copyright (c) 2005-2014 Alexandru Munteanu - m@ioalex.net
  *
  * http://mp3splt.sourceforge.net/
  *
@@ -265,9 +265,9 @@ static void ui_infos_new(ui_state *ui)
   infos->douglas_peucker_thresholds_defaults[0] = 2.0;
   infos->douglas_peucker_thresholds_defaults[1] = 5.0;
   infos->douglas_peucker_thresholds_defaults[2] = 8.0;
-  infos->douglas_peucker_thresholds_defaults[3] = 11.0;
-  infos->douglas_peucker_thresholds_defaults[4] = 15.0;
-  infos->douglas_peucker_thresholds_defaults[5] = 22.0;
+  infos->douglas_peucker_thresholds_defaults[3] = 10.0;
+  infos->douglas_peucker_thresholds_defaults[4] = 12.0;
+  infos->douglas_peucker_thresholds_defaults[5] = 15.0;
 
   infos->douglas_peucker_thresholds[0] = infos->douglas_peucker_thresholds_defaults[0];
   infos->douglas_peucker_thresholds[1] = infos->douglas_peucker_thresholds_defaults[1];
@@ -306,6 +306,25 @@ static void ui_infos_new(ui_state *ui)
 
   infos->timeout_value = DEFAULT_TIMEOUT_VALUE;
 
+  infos->gstreamer_stop_before_end = DEFAULT_GSTREAMER_STOP_BEFORE_END_VALUE;
+
+  infos->small_seek_jump_value = DEFAULT_SMALL_SEEK_JUMP_VALUE;
+  infos->seek_jump_value = DEFAULT_SEEK_JUMP_VALUE;
+  infos->big_seek_jump_value = DEFAULT_BIG_SEEK_JUMP_VALUE;
+
+  infos->previous_export_thread = NULL;
+
+  infos->previous_mark_time = 0;
+  infos->previous_mark_pixel = 0.0;
+  infos->pixels_diff_regarding_previous = -1;
+  infos->accumulated_diff = 0.0;
+  infos->previous_pixel_by_time = 
+    g_hash_table_new_full(g_double_hash, g_double_equal, g_free, g_free);
+  infos->pixel_moved_by_time =
+    g_hash_table_new_full(g_double_hash, g_double_equal, g_free, g_free);
+
+  infos->drawing_preferences_silence_wave = SPLT_FALSE;
+
   ui->infos = infos;
 }
 
@@ -314,7 +333,7 @@ static gui_status *ui_status_new(ui_state *ui)
   gui_status *status = g_malloc0(sizeof(gui_status));
 
   status->splitting = FALSE;
-  status->process_in_progress = FALSE;
+  status->process_in_progress = 0;
   status->mouse_on_progress_bar = FALSE;
 
   status->currently_compute_douglas_peucker_filters = FALSE;
@@ -324,6 +343,7 @@ static gui_status *ui_status_new(ui_state *ui)
   status->timer_active = FALSE;
   status->quick_preview_end_splitpoint = -1;
   status->preview_start_splitpoint = -1;
+  status->stop_preview_right_after_start = FALSE;
 
   status->move_time = 0;
 
@@ -370,20 +390,13 @@ static gui_status *ui_status_new(ui_state *ui)
   status->preview_row = 0;
   status->selected_split_mode = SELECTED_SPLIT_NORMAL;
 
-  status->should_trim = FALSE;
-
   status->file_selection_changed = FALSE;
 
   status->stop_split = FALSE;
 
-  status->previous_distance_by_time = NULL;
   status->previous_zoom_coeff = -2;
   status->previous_interpolation_level = -2;
-  status->previous_first_time_drawed = -2;
-  status->previous_first_x_drawed = -2;
-  status->previous_second_x_drawed = -2;
-  status->previous_second_time_drawed = -2;
-
+ 
   return status;
 }
 
@@ -469,6 +482,18 @@ static void ui_infos_free(ui_infos **infos)
     (*infos)->number_of_silence_points = 0;
   }
 
+  if ((*infos)->previous_pixel_by_time != NULL)
+  {
+    g_hash_table_destroy((*infos)->previous_pixel_by_time);
+    (*infos)->previous_pixel_by_time = NULL; 
+  }
+
+  if ((*infos)->pixel_moved_by_time != NULL)
+  {
+    g_hash_table_destroy((*infos)->pixel_moved_by_time);
+    (*infos)->pixel_moved_by_time = NULL; 
+  }
+
   g_array_free((*infos)->preview_time_windows, TRUE);
 
   g_free(*infos);
@@ -480,12 +505,6 @@ static void ui_status_free(gui_status **status)
   if (!status || !*status)
   {
     return;
-  }
-
-  if ((*status)->previous_distance_by_time != NULL)
-  {
-    g_hash_table_destroy((*status)->previous_distance_by_time);
-    (*status)->previous_distance_by_time = NULL; 
   }
 
   g_free(*status);

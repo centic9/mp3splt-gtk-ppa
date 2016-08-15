@@ -3,7 +3,7 @@
  * mp3splt-gtk -- utility based on mp3splt,
  *                for mp3/ogg splitting without decoding
  *
- * Copyright: (C) 2005-2013 Alexandru Munteanu
+ * Copyright: (C) 2005-2014 Alexandru Munteanu
  * Contact: m@ioalex.net
  *
  * http://mp3splt.sourceforge.net/
@@ -39,9 +39,13 @@
 
 #include "mp3splt-gtk.h"
 
+#ifndef __WIN32__
+  #include <langinfo.h>
+#endif
+
 ui_state *ui;
 
-static gpointer split_collected_files(ui_state *ui);
+static gpointer split_collected_files(ui_for_split *ui_fs);
 static gboolean collect_files_to_split(ui_state *ui);
 
 void split_action(ui_state *ui)
@@ -52,9 +56,15 @@ void split_action(ui_state *ui)
     set_is_splitting_safe(FALSE, ui);
     return;
   }
-  set_is_splitting_safe(FALSE, ui);
 
-  create_thread((GThreadFunc)split_collected_files, ui);
+  gtk_widget_set_sensitive(ui->gui->cancel_button, TRUE);
+  remove_all_split_rows(ui);
+
+  ui_for_split *ui_fs = build_ui_for_split(ui);
+  ui_fs->pat = get_splitpoints_and_tags_for_mp3splt_state(ui);
+
+  create_thread_and_unref((GThreadFunc)split_collected_files,
+      (gpointer) ui_fs, ui, "split");
 }
 
 static gboolean collect_files_to_split(ui_state *ui)
@@ -74,7 +84,7 @@ static gboolean collect_files_to_split(ui_state *ui)
   ui->files_to_split = g_ptr_array_new();
 
   //collect
-  if (get_split_file_mode_safe(ui) == FILE_MODE_SINGLE)
+  if (get_split_file_mode(ui) == FILE_MODE_SINGLE)
   {
     g_ptr_array_add(ui->files_to_split, g_strdup(get_input_filename(ui->gui)));
   }
@@ -137,33 +147,21 @@ static gint get_stop_split_safe(ui_state *ui)
 }
 
 //! Split the file
-static gpointer split_collected_files(ui_state *ui)
+static gpointer split_collected_files(ui_for_split *ui_fs)
 {
+  ui_state *ui = ui_fs->ui;
+
   set_process_in_progress_and_wait_safe(TRUE, ui);
 
-  enter_threads();
-
-  gtk_widget_set_sensitive(ui->gui->cancel_button, TRUE);
-
-  put_options_from_preferences(ui);
+  put_options_from_preferences(ui_fs);
 
   mp3splt_set_int_option(ui->mp3splt_state, SPLT_OPT_OUTPUT_FILENAMES, SPLT_OUTPUT_DEFAULT);
-  if (!get_checked_output_radio_box(ui))
+  if (!ui_fs->is_checked_output_radio_box)
   {
     mp3splt_set_int_option(ui->mp3splt_state, SPLT_OPT_OUTPUT_FILENAMES, SPLT_OUTPUT_FORMAT);
   }
 
-  exit_threads();
-
-  gint split_file_mode = get_split_file_mode_safe(ui);
-
-  lock_mutex(&ui->variables_mutex);
-  mp3splt_set_path_of_split(ui->mp3splt_state, get_output_directory(ui));
-  unlock_mutex(&ui->variables_mutex);
-
-  enter_threads();
-  remove_all_split_rows(ui);
-  exit_threads();
+  mp3splt_set_path_of_split(ui->mp3splt_state, ui_fs->output_directory);
 
   gint err = mp3splt_erase_all_splitpoints(ui->mp3splt_state);
   err = mp3splt_erase_all_tags(ui->mp3splt_state);
@@ -171,36 +169,37 @@ static gpointer split_collected_files(ui_state *ui)
   gint split_mode = mp3splt_get_int_option(ui->mp3splt_state, SPLT_OPT_SPLIT_MODE, &err);
   print_status_bar_confirmation_in_idle(err, ui);
 
-  enter_threads();
-  gchar *format = strdup(gtk_entry_get_text(GTK_ENTRY(ui->gui->output_entry)));
-  exit_threads();
-
-  err = mp3splt_set_oformat(ui->mp3splt_state, format);
-
-  if (format)
-  {
-    free(format);
-    format = NULL;
-  }
+  err = mp3splt_set_oformat(ui->mp3splt_state, ui_fs->output_format);
 
   if (mp3splt_get_int_option(ui->mp3splt_state, SPLT_OPT_SPLIT_MODE, &err) == SPLT_OPTION_NORMAL_MODE &&
-      split_file_mode == FILE_MODE_SINGLE)
+      ui_fs->split_file_mode == FILE_MODE_SINGLE)
   {
     mp3splt_set_int_option(ui->mp3splt_state, SPLT_OPT_OUTPUT_FILENAMES, SPLT_OUTPUT_CUSTOM);
   }
 
   if (split_mode == SPLT_OPTION_NORMAL_MODE)
   {
-    enter_threads();
-    put_splitpoints_and_tags_in_mp3splt_state(ui->mp3splt_state, ui);
+    gint i = 0;
+    for (i = 0;i < ui_fs->pat->splitpoints->len; i++)
+    {
+      splt_point *point = g_ptr_array_index(ui_fs->pat->splitpoints, i);
+      mp3splt_append_splitpoint(ui->mp3splt_state, point);
+      splt_tags *tags = g_ptr_array_index(ui_fs->pat->tags, i);
+      mp3splt_append_tags(ui->mp3splt_state, tags);
+    }
 
     err = mp3splt_remove_tags_of_skippoints(ui->mp3splt_state);
     print_status_bar_confirmation_in_idle(err, ui);
-    exit_threads();
   }
 
-  err = SPLT_OK;
   gint output_filenames = mp3splt_get_int_option(ui->mp3splt_state, SPLT_OPT_OUTPUT_FILENAMES, &err);
+
+  gint selected_split_mode = ui_fs->selected_split_mode;
+  gboolean is_single_file_mode = FALSE;
+  if (ui_fs->split_file_mode == FILE_MODE_SINGLE)
+  {
+    is_single_file_mode = TRUE;
+  }
 
   //files_to_split will not have a read/write issue because the 'splitting' boolean, which does not
   //allow us to modify it while we read it here - no mutex needed
@@ -211,13 +210,48 @@ static gpointer split_collected_files(ui_state *ui)
   {
     gchar *filename = g_ptr_array_index(files_to_split, i);
 
-    enter_threads();
     print_processing_file(filename, ui);
-    exit_threads();
 
     mp3splt_set_filename_to_split(ui->mp3splt_state, filename);
 
-    gint err = mp3splt_split(ui->mp3splt_state);
+    gint err = SPLT_OK;
+
+    if (!is_single_file_mode)
+    {
+      if (selected_split_mode == SELECTED_SPLIT_INTERNAL_SHEET)
+      {
+        err = mp3splt_import(ui->mp3splt_state, PLUGIN_INTERNAL_IMPORT, filename);
+        print_status_bar_confirmation_in_idle(err, ui);
+        if (err < 0) { continue; }
+      }
+      else if ((selected_split_mode == SELECTED_SPLIT_CUE_FILE) ||
+          (selected_split_mode == SELECTED_SPLIT_CDDB_FILE))
+      {
+        gchar *cue_or_cddb = g_strdup(filename);
+        gchar *last_ext = g_strrstr(cue_or_cddb, ".");
+        *last_ext = '\0';
+
+        GString *cue_or_cddb_file = g_string_new(cue_or_cddb);
+        g_free(cue_or_cddb);
+
+        if (selected_split_mode == SELECTED_SPLIT_CUE_FILE)
+        {
+          g_string_append(cue_or_cddb_file, ".cue");
+          err = mp3splt_import(ui->mp3splt_state, CUE_IMPORT, cue_or_cddb_file->str);
+        }
+        else
+        {
+          g_string_append(cue_or_cddb_file, ".cddb");
+          err = mp3splt_import(ui->mp3splt_state, CDDB_IMPORT, cue_or_cddb_file->str);
+        }
+
+        print_status_bar_confirmation_in_idle(err, ui);
+        g_string_free(cue_or_cddb_file, SPLT_TRUE);
+        if (err < 0) { continue; }
+      }
+    }
+
+    err = mp3splt_split(ui->mp3splt_state);
     print_status_bar_confirmation_in_idle(err, ui);
 
     err = mp3splt_erase_all_tags(ui->mp3splt_state);
@@ -235,35 +269,73 @@ static gpointer split_collected_files(ui_state *ui)
 
   mp3splt_set_int_option(ui->mp3splt_state, SPLT_OPT_OUTPUT_FILENAMES, output_filenames);
 
+  free_ui_for_split(ui_fs);
+
   ui_with_err *ui_err = g_malloc0(sizeof(ui_with_err));
   ui_err->err = err;
   ui_err->ui = ui;
 
-  gdk_threads_add_idle_full(G_PRIORITY_HIGH_IDLE, (GSourceFunc)split_collected_files_end, ui_err, NULL);
+  add_idle(G_PRIORITY_HIGH_IDLE, (GSourceFunc)split_collected_files_end, ui_err, NULL);
 
   return NULL;
 }
 
-GThread *create_thread(GThreadFunc func, ui_state *ui)
+static gpointer thread_wrapper_function(gpointer data)
 {
+  ui_with_data *ui_wd = (ui_with_data *) data;
+  ui_state *ui = ui_wd->ui;
+
+  set_process_in_progress_and_wait_safe(TRUE, ui);
+
+  //some general options
+  if (ui_wd->filename_to_split != NULL)
+  {
+    mp3splt_set_filename_to_split(ui->mp3splt_state, ui_wd->filename_to_split);
+  }
+
   mp3splt_set_int_option(ui->mp3splt_state, SPLT_OPT_DEBUG_MODE, ui->infos->debug_is_active);
-  return g_thread_create(func, ui, TRUE, NULL);
+  if (ui_wd->is_checked_output_radio_box)
+  {
+    mp3splt_set_int_option(ui->mp3splt_state, SPLT_OPT_OUTPUT_FILENAMES, SPLT_OUTPUT_FORMAT);
+  }
+  else
+  {
+    mp3splt_set_int_option(ui->mp3splt_state, SPLT_OPT_OUTPUT_FILENAMES, SPLT_OUTPUT_DEFAULT);
+  }
+
+  set_process_in_progress_and_wait_safe(FALSE, ui);
+
+  gpointer returned_value = ui_wd->thread(ui_wd->data);
+
+  if (ui_wd->filename_to_split) { g_free(ui_wd->filename_to_split); }
+  g_free(ui_wd);
+
+  return returned_value;
 }
 
-GThread *create_thread_with_fname(GThreadFunc func, ui_with_fname *ui_fname)
+GThread *create_thread(GThreadFunc func, gpointer data, ui_state *ui, const char *name)
 {
-  mp3splt_set_int_option(ui_fname->ui->mp3splt_state, SPLT_OPT_DEBUG_MODE, ui_fname->ui->infos->debug_is_active);
-  return g_thread_create(func, ui_fname, TRUE, NULL);
+  ui_with_data *ui_wd = g_malloc0(sizeof(ui_with_data));
+  ui_wd->ui = ui;
+  ui_wd->data = data;
+  ui_wd->thread = func;
+  ui_wd->is_checked_output_radio_box = get_checked_output_radio_box(ui);
+  gchar *input_filename = get_input_filename(ui->gui);
+  if (input_filename != NULL)
+  {
+    ui_wd->filename_to_split = g_strdup(input_filename);
+  }
+  return g_thread_new(name, thread_wrapper_function, ui_wd);
 }
 
-void enter_threads()
+void create_thread_and_unref(GThreadFunc func, gpointer data, ui_state *ui, const char *name)
 {
-  gdk_threads_enter();
+  g_thread_unref(create_thread(func, data, ui, name));
 }
 
-void exit_threads()
+void add_idle(gint priority, GSourceFunc function, gpointer data, GDestroyNotify notify)
 {
-  gdk_threads_leave();
+  gdk_threads_add_idle_full(priority, function, data, notify);
 }
 
 gboolean exit_application(GtkWidget *widget, GdkEvent  *event, gpointer data)
@@ -283,14 +355,9 @@ gboolean exit_application(GtkWidget *widget, GdkEvent  *event, gpointer data)
     player_quit(ui);
   }
 
-  gtk_main_quit();
+  g_application_quit(G_APPLICATION(ui->gui->application));
 
   return FALSE;
-}
-
-void exit_application_bis(GtkWidget *widget, gpointer data)
-{
-  exit_application(widget, NULL, data);
 }
 
 static gboolean sigint_called = FALSE;
@@ -359,10 +426,11 @@ static void init_i18n_and_plugin_paths(gchar *argv[], ui_state *ui)
 
   bindtextdomain(LIBMP3SPLT_WITH_SONAME, "translations");
   bindtextdomain("mp3splt-gtk", "translations");
+  bind_textdomain_codeset("mp3splt-gtk", "UTF-8");
 #else
   bindtextdomain("mp3splt-gtk", LOCALEDIR);
+  bind_textdomain_codeset("mp3splt-gtk", nl_langinfo(CODESET));
 #endif
-  bind_textdomain_codeset("mp3splt-gtk", "UTF-8");
 
 #ifdef __WIN32__
   if (executable != NULL)
@@ -374,59 +442,6 @@ static void init_i18n_and_plugin_paths(gchar *argv[], ui_state *ui)
       _chdir(executable);
     }
   }
-#endif
-}
-
-static void parse_command_line_options(gint argc, gchar * argv[], ui_state *ui)
-{
-  opterr = 0;
-  int option;
-  while ((option = getopt(argc, argv, "d:")) != -1)
-  {
-    switch (option)
-    {
-      case 'd':
-        fprintf(stdout, _("Setting the output directory to %s.\n"), optarg);
-        set_output_directory_and_update_ui((gchar *)optarg, ui);
-#ifdef __WIN32__
-        mkdir(optarg);
-#else
-        mkdir(optarg, 0777);
-#endif
-        if (!directory_exists(optarg))
-        {
-          ui_fail(ui, "Error: The specified output directory is inaccessible!\n");
-        }
-        break;
-      case '?':
-        if (optopt == 'd')
-          ui_fail(ui, _("Option -%c requires an argument.\n"), optopt);
-        else if (isprint(optopt))
-          ui_fail(ui, _("Unknown option `-%c'.\n"), optopt, NULL);
-        else
-          ui_fail(ui, _("Unknown option character `\\x%x'.\n"), optopt);
-        break;
-      default:
-        ui_fail(ui, NULL);
-    }
-  }
-
-  if (optind == argc)
-  {
-    return;
-  }
-
-  if (!file_exists(argv[optind]))
-  {
-    ui_fail(ui, _("Cannot open input file %s\n"), argv[optind]);
-  }
-
-#ifndef __WIN32__
-  char *input_filename = realpath(argv[optind], NULL);
-  import_file(input_filename, ui);
-  free(input_filename);
-#else
-  import_file(argv[optind], ui);
 #endif
 }
 
@@ -479,12 +494,12 @@ static void set_language_env_variable_from_preferences()
    if the pathname we give to it is 0 => find a solution that works 
    everywhere.
  */
-gint main(gint argc, gchar *argv[], gchar **envp)
+gint main(gint argc, gchar **argv, gchar **envp)
 {
   ui = ui_state_new();
 
-  g_thread_init(NULL);
-  gdk_threads_init();
+  ui->argc = argc;
+  ui->argv = argv;
 
   register_application_signals();
   init_i18n_and_plugin_paths(argv, ui);
@@ -498,17 +513,16 @@ gint main(gint argc, gchar *argv[], gchar **envp)
 #endif
 
   create_application(ui);
-
-  import_cue_file_from_the_configuration_directory(ui);
-
-  parse_command_line_options(argc, argv, ui);
-
-  enter_threads();
-  gtk_main();
-  exit_threads();
+  int application_code =
+    g_application_run(G_APPLICATION(ui->gui->application), argc, argv);
 
   gint return_code = ui->return_code;
   ui_state_free(ui);
+
+  if (application_code != 0)
+  {
+    return application_code;
+  }
 
   return return_code;
 }

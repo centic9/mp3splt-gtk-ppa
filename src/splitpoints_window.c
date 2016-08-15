@@ -3,7 +3,7 @@
  * mp3splt-gtk -- utility based on mp3splt,
  *                for mp3/ogg splitting without decoding
  *
- * Copyright: (C) 2005-2013 Alexandru Munteanu
+ * Copyright: (C) 2005-2014 Alexandru Munteanu
  * Contact: m@ioalex.net
  *
  * http://mp3splt.sourceforge.net/
@@ -428,7 +428,7 @@ void remove_splitpoint(gint index, gint stop_preview, ui_state *ui)
   GtkTreeIter iter;
   gtk_tree_model_get_iter(model, &iter, path);
 
-  //cancel quick preview if necessary
+  //cancel preview if necessary
   if (((index == ui->status->preview_start_splitpoint) && stop_preview) ||
       ((index == get_quick_preview_end_splitpoint_safe(ui)) &&
        (get_quick_preview_end_splitpoint_safe(ui) == (ui->infos->splitnumber-1)) && stop_preview))
@@ -467,7 +467,7 @@ void remove_splitpoint(gint index, gint stop_preview, ui_state *ui)
   remove_status_message(ui->gui);
   update_add_button(ui);
   check_update_down_progress_bar(ui);
-  refresh_drawing_area(ui->gui);
+  refresh_drawing_area(ui->gui, ui->infos);
 
   export_cue_file_in_configuration_directory(ui);
 }
@@ -672,7 +672,7 @@ static void add_splitpoint(Split_point my_split_point, gint old_index, ui_state 
   }
 
   update_add_button(ui);
-  refresh_drawing_area(ui->gui);
+  refresh_drawing_area(ui->gui, ui->infos);
   check_update_down_progress_bar(ui);
 
   export_cue_file_in_configuration_directory(ui);
@@ -980,74 +980,50 @@ static gboolean detect_silence_and_set_splitpoints_end(ui_with_err *ui_err)
 
   g_free(ui_err);
 
+  export_cue_file_in_configuration_directory(ui);
+
   return FALSE;
 }
 
-static void set_should_trim_safe(gboolean value, ui_state *ui)
-{
-  lock_mutex(&ui->variables_mutex);
-  ui->status->should_trim = value;
-  unlock_mutex(&ui->variables_mutex);
-}
-
-static gint get_should_trim_safe(ui_state *ui)
-{
-  lock_mutex(&ui->variables_mutex);
-  gint should_trim = ui->status->should_trim;
-  unlock_mutex(&ui->variables_mutex);
-  return should_trim;
-}
 
 //!set splitpints from silence detection
-static gpointer detect_silence_and_set_splitpoints(ui_state *ui)
+static gpointer detect_silence_and_set_splitpoints(ui_for_split *ui_fs)
 {
+  ui_state *ui = ui_fs->ui;
+
   set_process_in_progress_and_wait_safe(TRUE, ui);
 
   set_is_splitting_safe(TRUE, ui);
 
+  mp3splt_set_float_option(ui->mp3splt_state, SPLT_OPT_PARAM_THRESHOLD, ui_fs->single_silence_threshold);
+  mp3splt_set_float_option(ui->mp3splt_state, SPLT_OPT_PARAM_OFFSET, ui_fs->single_silence_offset);
+  mp3splt_set_int_option(ui->mp3splt_state, SPLT_OPT_PARAM_NUMBER_TRACKS, ui_fs->single_silence_number);
+  mp3splt_set_float_option(ui->mp3splt_state, SPLT_OPT_PARAM_MIN_LENGTH, 
+      ui_fs->single_silence_minimum_length);
+  mp3splt_set_float_option(ui->mp3splt_state, SPLT_OPT_PARAM_MIN_TRACK_LENGTH,
+      ui_fs->single_silence_minimum_track_length);
+  mp3splt_set_int_option(ui->mp3splt_state, SPLT_OPT_PARAM_REMOVE_SILENCE,
+      ui_fs->single_silence_remove);
+
   gint err = SPLT_OK;
-
-  enter_threads();
-
-  gtk_widget_set_sensitive(ui->gui->scan_silence_button, FALSE);
-  gtk_widget_set_sensitive(ui->gui->scan_silence_button_player, FALSE);
-  gtk_widget_set_sensitive(ui->gui->scan_trim_silence_button, FALSE);
-  gtk_widget_set_sensitive(ui->gui->scan_trim_silence_button_player, FALSE);
-  gtk_widget_set_sensitive(ui->gui->cancel_button, TRUE);
-  gchar *format = strdup(gtk_entry_get_text(GTK_ENTRY(ui->gui->output_entry)));
-
-  lock_mutex(&ui->variables_mutex);
-  mp3splt_set_filename_to_split(ui->mp3splt_state, get_input_filename(ui->gui));
-  unlock_mutex(&ui->variables_mutex);
-
-  gint checked_output_radio_box = get_checked_output_radio_box(ui);
-
-  exit_threads();
+  if (ui_fs->is_checked_output_radio_box == 0)
+  {
+    err = mp3splt_set_oformat(ui->mp3splt_state, ui_fs->output_format);
+  }
+  print_status_bar_confirmation_in_idle(err, ui);
 
   err = mp3splt_erase_all_splitpoints(ui->mp3splt_state);
-
-  if (checked_output_radio_box == 0)
-  {
-    err = mp3splt_set_oformat(ui->mp3splt_state, format);
-  }
-
-  if (format)
-  {
-    free(format);
-    format = NULL;
-  }
+  print_status_bar_confirmation_in_idle(err, ui);
 
   mp3splt_set_int_option(ui->mp3splt_state, SPLT_OPT_PRETEND_TO_SPLIT, SPLT_TRUE);
   mp3splt_set_split_filename_function(ui->mp3splt_state, NULL, ui);
   mp3splt_set_int_option(ui->mp3splt_state, SPLT_OPT_TAGS, SPLT_TAGS_ORIGINAL_FILE);
 
-  print_status_bar_confirmation_in_idle(err, ui);
-
   err = SPLT_OK;
   int old_split_mode = mp3splt_get_int_option(ui->mp3splt_state, SPLT_OPT_SPLIT_MODE, &err);
   int old_tags_option = mp3splt_get_int_option(ui->mp3splt_state, SPLT_OPT_TAGS, &err);
 
-  if (get_should_trim_safe(ui))
+  if (ui_fs->should_trim)
   {
     err = mp3splt_set_trim_silence_points(ui->mp3splt_state);
   }
@@ -1055,36 +1031,47 @@ static gpointer detect_silence_and_set_splitpoints(ui_state *ui)
   {
     mp3splt_set_silence_points(ui->mp3splt_state, &err);
   }
+  print_status_bar_confirmation_in_idle(err, ui);
 
   mp3splt_set_int_option(ui->mp3splt_state, SPLT_OPT_TAGS, old_tags_option);
   mp3splt_set_int_option(ui->mp3splt_state, SPLT_OPT_SPLIT_MODE, old_split_mode);
+
+  free_ui_for_split(ui_fs);
 
   ui_with_err *ui_err = g_malloc0(sizeof(ui_with_err));
   ui_err->err = err;
   ui_err->ui = ui;
 
-  gdk_threads_add_idle_full(G_PRIORITY_HIGH_IDLE, 
+  add_idle(G_PRIORITY_HIGH_IDLE, 
       (GSourceFunc)detect_silence_and_set_splitpoints_end, ui_err, NULL);
 
   return NULL;
 }
 
-static void detect_silence_and_set_splitpoints_action(ui_state *ui)
+static void detect_silence_and_set_splitpoints_action(ui_state *ui, gboolean should_trim)
 {
-  create_thread((GThreadFunc)detect_silence_and_set_splitpoints, ui);
+  gtk_widget_set_sensitive(ui->gui->scan_silence_button, FALSE);
+  gtk_widget_set_sensitive(ui->gui->scan_silence_button_player, FALSE);
+  gtk_widget_set_sensitive(ui->gui->scan_trim_silence_button, FALSE);
+  gtk_widget_set_sensitive(ui->gui->scan_trim_silence_button_player, FALSE);
+  gtk_widget_set_sensitive(ui->gui->cancel_button, TRUE);
+
+  ui_for_split *ui_fs = build_ui_for_split(ui);
+  ui_fs->should_trim = should_trim;
+
+  create_thread_and_unref((GThreadFunc)detect_silence_and_set_splitpoints, 
+      (gpointer) ui_fs, ui, "detect_silence");
 }
 
 //!start thread with 'set splitpints from silence detection'
 static void detect_silence_and_add_splitpoints_start_thread(ui_state *ui)
 {
-  set_should_trim_safe(FALSE, ui);
-  detect_silence_and_set_splitpoints_action(ui);
+  detect_silence_and_set_splitpoints_action(ui, FALSE);
 }
 
 static void detect_silence_and_add_trim_splitpoints_start_thread(ui_state *ui)
 {
-  set_should_trim_safe(TRUE, ui);
-  detect_silence_and_set_splitpoints_action(ui);
+  detect_silence_and_set_splitpoints_action(ui, TRUE);
 }
 
 //!update silence parameters when 'widget' changes
@@ -1134,9 +1121,9 @@ void create_trim_silence_window(GtkWidget *button, ui_state *ui)
     gtk_dialog_new_with_buttons(_("Set trim splitpoints using silence detection"),
         GTK_WINDOW(ui->gui->window),
         GTK_DIALOG_DESTROY_WITH_PARENT | GTK_DIALOG_MODAL,
-        GTK_STOCK_OK,
+        _("_OK"),
         GTK_RESPONSE_YES,
-        GTK_STOCK_CANCEL,
+        _("_Cancel"),
         GTK_RESPONSE_CANCEL,
         NULL);
 
@@ -1176,11 +1163,9 @@ void create_trim_silence_window(GtkWidget *button, ui_state *ui)
 
   gtk_widget_destroy(silence_detection_window);
 
-  if (result == GTK_RESPONSE_YES)
-  {
-    mp3splt_set_float_option(ui->mp3splt_state, SPLT_OPT_PARAM_THRESHOLD, ui->infos->silence_threshold_value);
-    detect_silence_and_add_trim_splitpoints_start_thread(ui);
-  }
+  if (result != GTK_RESPONSE_YES) { return; }
+
+  detect_silence_and_add_trim_splitpoints_start_thread(ui);
 }
 
 //!event for clicking the 'detect silence and add splitpoints' button
@@ -1193,9 +1178,9 @@ void create_detect_silence_and_add_splitpoints_window(GtkWidget *button, ui_stat
     gtk_dialog_new_with_buttons(_("Set splitpoints from silence detection"),
         GTK_WINDOW(gui->window),
         GTK_DIALOG_DESTROY_WITH_PARENT | GTK_DIALOG_MODAL,
-        GTK_STOCK_OK,
+        _("_OK"),
         GTK_RESPONSE_YES,
-        GTK_STOCK_CANCEL,
+        _("_Cancel"),
         GTK_RESPONSE_CANCEL,
         NULL);
 
@@ -1315,23 +1300,9 @@ void create_detect_silence_and_add_splitpoints_window(GtkWidget *button, ui_stat
 
   gtk_widget_destroy(silence_detection_window);
 
-  if (result == GTK_RESPONSE_YES)
-  {
-    mp3splt_set_float_option(ui->mp3splt_state, SPLT_OPT_PARAM_THRESHOLD, 
-        infos->silence_threshold_value);
-    mp3splt_set_float_option(ui->mp3splt_state, SPLT_OPT_PARAM_OFFSET, 
-        infos->silence_offset_value);
-    mp3splt_set_int_option(ui->mp3splt_state, SPLT_OPT_PARAM_NUMBER_TRACKS, 
-        infos->silence_number_of_tracks);
-    mp3splt_set_float_option(ui->mp3splt_state, SPLT_OPT_PARAM_MIN_LENGTH, 
-        infos->silence_minimum_length);
-    mp3splt_set_float_option(ui->mp3splt_state, SPLT_OPT_PARAM_MIN_TRACK_LENGTH,
-        infos->silence_minimum_track_length);
-    mp3splt_set_int_option(ui->mp3splt_state, SPLT_OPT_PARAM_REMOVE_SILENCE,
-        infos->silence_remove_silence_between_tracks);
+  if (result != GTK_RESPONSE_YES) { return; }
 
-    detect_silence_and_add_splitpoints_start_thread(ui);
-  }
+  detect_silence_and_add_splitpoints_start_thread(ui);
 }
 
 //!remove a row from the table
@@ -1379,7 +1350,7 @@ void remove_all_rows(GtkWidget *widget, ui_state *ui)
   remove_status_message(ui->gui);
   cancel_quick_preview_all(ui);
   update_add_button(ui);
-  refresh_drawing_area(ui->gui);
+  refresh_drawing_area(ui->gui, ui->infos);
   check_update_down_progress_bar(ui);
 
   export_cue_file_in_configuration_directory(ui);
@@ -1433,7 +1404,7 @@ static GtkWidget *create_init_spinners_buttons(ui_state *ui)
   ui->gui->spinner_hundr_secs = create_init_spinner(hbox, 0, 99, _("Hundredths:"), 2, ui);
 
   /* add button */
-  GtkWidget *add_button = wh_create_cool_button(GTK_STOCK_ADD, _("_Add"), FALSE);
+  GtkWidget *add_button = wh_create_cool_button("list-add", _("_Add"), FALSE);
   ui->gui->add_button = add_button;
 
   gtk_button_set_relief(GTK_BUTTON(add_button), GTK_RELIEF_NONE);
@@ -1443,7 +1414,7 @@ static GtkWidget *create_init_spinners_buttons(ui_state *ui)
   gtk_widget_set_tooltip_text(add_button,_("Add splitpoint"));
 
   /* remove row button */
-  GtkWidget *remove_row_button = wh_create_cool_button(GTK_STOCK_REMOVE, _("_Remove"), FALSE);
+  GtkWidget *remove_row_button = wh_create_cool_button("list-remove", _("_Remove"), FALSE);
   ui->gui->remove_row_button = remove_row_button;
 
   gtk_button_set_relief(GTK_BUTTON(remove_row_button), GTK_RELIEF_NONE);
@@ -1453,7 +1424,7 @@ static GtkWidget *create_init_spinners_buttons(ui_state *ui)
   gtk_widget_set_tooltip_text(remove_row_button, _("Remove selected splitpoints"));
 
   /* remove all rows button */
-  GtkWidget *remove_all_button = wh_create_cool_button(GTK_STOCK_CLEAR, _("R_emove all"), FALSE);
+  GtkWidget *remove_all_button = wh_create_cool_button("edit-clear", _("R_emove all"), FALSE);
   ui->gui->remove_all_button = remove_all_button;
 
   gtk_button_set_relief(GTK_BUTTON(remove_all_button), GTK_RELIEF_NONE);
@@ -1470,7 +1441,7 @@ static void create_init_special_buttons(ui_state *ui)
 {
   /* set splitpoints from trim silence detection */
   GtkWidget *scan_trim_silence_button =
-    wh_create_cool_button(GTK_STOCK_CUT, _("_Trim splitpoints"), FALSE);
+    wh_create_cool_button("edit-find", _("_Trim splitpoints"), FALSE);
   ui->gui->scan_trim_silence_button = scan_trim_silence_button;
   gtk_widget_set_sensitive(scan_trim_silence_button, TRUE);
   g_signal_connect(G_OBJECT(scan_trim_silence_button), "clicked",
@@ -1480,7 +1451,7 @@ static void create_init_special_buttons(ui_state *ui)
 
   /* set splitpoints from silence detection */
   GtkWidget *scan_silence_button =
-    wh_create_cool_button(GTK_STOCK_FIND_AND_REPLACE, _("_Silence detection"), FALSE);
+    wh_create_cool_button("edit-find-replace", _("_Silence detection"), FALSE);
   ui->gui->scan_silence_button = scan_silence_button;
   gtk_widget_set_sensitive(scan_silence_button, TRUE);
   g_signal_connect(G_OBJECT(scan_silence_button), "clicked",
@@ -1538,6 +1509,8 @@ gint get_splitpoint_time(gint splitpoint_index, ui_state *ui)
 
 static gboolean split_preview_end(ui_with_err *ui_err)
 {
+  set_process_in_progress_and_wait_safe(FALSE, ui_err->ui);
+
   gint err = ui_err->err;
   ui_state *ui = ui_err->ui;
 
@@ -1561,21 +1534,22 @@ static gboolean split_preview_end(ui_with_err *ui_err)
     gtk_progress_bar_set_text(ui->gui->percent_progress_bar, _(" finished"));
   }
 
-  set_process_in_progress_and_wait_safe(FALSE, ui_err->ui);
-
   g_free(ui_err);
 
   return FALSE;
 }
 
-static gpointer split_preview(ui_state *ui)
+static gpointer split_preview(ui_for_split *ui_fs)
 {
+  ui_state *ui = ui_fs->ui;
+
   set_process_in_progress_and_wait_safe(TRUE, ui);
 
   int err = mp3splt_erase_all_splitpoints(ui->mp3splt_state);
-  err = mp3splt_erase_all_tags(ui->mp3splt_state);
+  print_status_bar_confirmation_in_idle(err, ui);
 
-  enter_threads();
+  err = mp3splt_erase_all_tags(ui->mp3splt_state);
+  print_status_bar_confirmation_in_idle(err, ui);
 
   splt_point *splitpoint = mp3splt_point_new(get_preview_start_position_safe(ui), NULL);
   mp3splt_point_set_name(splitpoint, "preview");
@@ -1587,17 +1561,10 @@ static gpointer split_preview(ui_state *ui)
   mp3splt_point_set_type(splitpoint, SPLT_SKIPPOINT);
   mp3splt_append_splitpoint(ui->mp3splt_state, splitpoint);
 
-  lock_mutex(&ui->variables_mutex);
-  mp3splt_set_filename_to_split(ui->mp3splt_state, get_input_filename(ui->gui));
-  unlock_mutex(&ui->variables_mutex);
-
   mp3splt_set_int_option(ui->mp3splt_state, SPLT_OPT_OUTPUT_FILENAMES, SPLT_OUTPUT_CUSTOM);
   mp3splt_set_int_option(ui->mp3splt_state, SPLT_OPT_SPLIT_MODE, SPLT_OPTION_NORMAL_MODE);
 
-  put_options_from_preferences(ui);
-  remove_all_split_rows(ui);
-
-  exit_threads();
+  put_options_from_preferences(ui_fs);
 
   gchar *fname_path = get_preferences_filename();
   fname_path[strlen(fname_path) - 18] = '\0';
@@ -1606,18 +1573,24 @@ static gpointer split_preview(ui_state *ui)
 
   err = mp3splt_split(ui->mp3splt_state);
 
+  free_ui_for_split(ui_fs);
+
   ui_with_err *ui_err = g_malloc0(sizeof(ui_with_err));
   ui_err->err = err;
   ui_err->ui = ui;
 
-  gdk_threads_add_idle_full(G_PRIORITY_HIGH_IDLE, (GSourceFunc)split_preview_end, ui_err, NULL);
+  add_idle(G_PRIORITY_HIGH_IDLE, (GSourceFunc)split_preview_end, ui_err, NULL);
 
   return NULL;
 }
 
 static void split_preview_action(ui_state *ui)
 {
-  create_thread((GThreadFunc)split_preview, ui);
+  ui_for_split *ui_fs = build_ui_for_split(ui);
+
+  remove_all_split_rows(ui);
+
+  create_thread_and_unref((GThreadFunc)split_preview, (gpointer) ui_fs, ui, "split_preview");
 }
 
 //!the row clicked event, preview the song
@@ -1821,61 +1794,43 @@ static void build_and_show_popup_menu(GtkWidget *treeview, GdkEventButton *event
 {
   GtkWidget *menu = gtk_menu_new();
 
-  GtkWidget *item = gtk_image_menu_item_new_with_label(_("Clone all tags"));
-  GtkWidget *image = gtk_image_new_from_stock(GTK_STOCK_COPY, GTK_ICON_SIZE_MENU);
-  gtk_image_menu_item_set_image(GTK_IMAGE_MENU_ITEM(item), image);
+  GtkWidget *item = gtk_menu_item_new_with_label(_("Clone all tags"));
   g_signal_connect(item, "activate", G_CALLBACK(clone_all_event), ui);
   gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);
 
   gtk_menu_shell_append(GTK_MENU_SHELL(menu), gtk_separator_menu_item_new());
 
-  item = gtk_image_menu_item_new_with_label(_("Clone title"));
-  image = gtk_image_new_from_stock(GTK_STOCK_COPY, GTK_ICON_SIZE_MENU);
-  gtk_image_menu_item_set_image(GTK_IMAGE_MENU_ITEM(item), image);
+  item = gtk_menu_item_new_with_label(_("Clone title"));
   g_signal_connect(item, "activate", G_CALLBACK(clone_title_event), ui);
   gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);
 
-  item = gtk_image_menu_item_new_with_label(_("Clone artist"));
-  image = gtk_image_new_from_stock(GTK_STOCK_COPY, GTK_ICON_SIZE_MENU);
-  gtk_image_menu_item_set_image(GTK_IMAGE_MENU_ITEM(item), image);
+  item = gtk_menu_item_new_with_label(_("Clone artist"));
   g_signal_connect(item, "activate", G_CALLBACK(clone_artist_event), ui);
   gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);
 
-  item = gtk_image_menu_item_new_with_label(_("Clone album"));
-  image = gtk_image_new_from_stock(GTK_STOCK_COPY, GTK_ICON_SIZE_MENU);
-  gtk_image_menu_item_set_image(GTK_IMAGE_MENU_ITEM(item), image);
+  item = gtk_menu_item_new_with_label(_("Clone album"));
   g_signal_connect(item, "activate", G_CALLBACK(clone_album_event), ui);
   gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);
 
-  item = gtk_image_menu_item_new_with_label(_("Clone genre"));
-  image = gtk_image_new_from_stock(GTK_STOCK_COPY, GTK_ICON_SIZE_MENU);
-  gtk_image_menu_item_set_image(GTK_IMAGE_MENU_ITEM(item), image);
+  item = gtk_menu_item_new_with_label(_("Clone genre"));
   g_signal_connect(item, "activate", G_CALLBACK(clone_genre_event), ui);
   gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);
 
-  item = gtk_image_menu_item_new_with_label(_("Clone year"));
-  image = gtk_image_new_from_stock(GTK_STOCK_COPY, GTK_ICON_SIZE_MENU);
-  gtk_image_menu_item_set_image(GTK_IMAGE_MENU_ITEM(item), image);
+  item = gtk_menu_item_new_with_label(_("Clone year"));
   g_signal_connect(item, "activate", G_CALLBACK(clone_year_event), ui);
   gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);
 
-  item = gtk_image_menu_item_new_with_label(_("Clone track"));
-  image = gtk_image_new_from_stock(GTK_STOCK_COPY, GTK_ICON_SIZE_MENU);
-  gtk_image_menu_item_set_image(GTK_IMAGE_MENU_ITEM(item), image);
+  item = gtk_menu_item_new_with_label(_("Clone track"));
   g_signal_connect(item, "activate", G_CALLBACK(clone_track_event), ui);
   gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);
 
-  item = gtk_image_menu_item_new_with_label(_("Clone comment"));
-  image = gtk_image_new_from_stock(GTK_STOCK_COPY, GTK_ICON_SIZE_MENU);
-  gtk_image_menu_item_set_image(GTK_IMAGE_MENU_ITEM(item), image);
+  item = gtk_menu_item_new_with_label(_("Clone comment"));
   g_signal_connect(item, "activate", G_CALLBACK(clone_comment_event), ui);
   gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);
 
   gtk_menu_shell_append(GTK_MENU_SHELL(menu), gtk_separator_menu_item_new());
 
-  item = gtk_image_menu_item_new_with_label(_("Auto-increment track"));
-  image = gtk_image_new_from_stock(GTK_STOCK_GO_DOWN, GTK_ICON_SIZE_MENU);
-  gtk_image_menu_item_set_image(GTK_IMAGE_MENU_ITEM(item), image);
+  item = gtk_menu_item_new_with_label(_("Auto-increment track"));
   g_signal_connect(item, "activate", G_CALLBACK(auto_increment_track_event), ui);
   gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);
 
@@ -1989,7 +1944,7 @@ static void create_columns(ui_state *ui)
 
   /* column preview */
   renderer_pix = GTK_CELL_RENDERER_PIXBUF(gtk_cell_renderer_pixbuf_new());
-  g_object_set(renderer_pix, "stock-id", GTK_STOCK_MEDIA_PLAY,
+  g_object_set(renderer_pix, "icon-name", "media-playback-start",
       "stock-size", GTK_ICON_SIZE_MENU, NULL);
   column_preview = gtk_tree_view_column_new_with_attributes 
     (_("LiveP"), GTK_CELL_RENDERER(renderer_pix), NULL);
@@ -1997,7 +1952,7 @@ static void create_columns(ui_state *ui)
 
   /* split preview */
   renderer_pix = GTK_CELL_RENDERER_PIXBUF(gtk_cell_renderer_pixbuf_new());
-  g_object_set(renderer_pix, "stock-id", GTK_STOCK_MEDIA_PLAY,
+  g_object_set(renderer_pix, "icon-name", "media-playback-start",
       "stock-size", GTK_ICON_SIZE_MENU, NULL);
   column_split_preview = gtk_tree_view_column_new_with_attributes 
     (_("SplitP"), GTK_CELL_RENDERER(renderer_pix), NULL);
@@ -2162,9 +2117,10 @@ static void garray_to_array(GArray *spltpoints, glong *hundredth, ui_state *ui)
   }
 }
 
-//!puts the splitpoints into the state
-void put_splitpoints_and_tags_in_mp3splt_state(splt_state *state, ui_state *ui)
+points_and_tags *get_splitpoints_and_tags_for_mp3splt_state(ui_state *ui)
 {
+  points_and_tags *pat = new_points_and_tags();
+
   glong hundr[ui->infos->splitnumber];
   garray_to_array(ui->splitpoints, hundr, ui);
 
@@ -2194,7 +2150,7 @@ void put_splitpoints_and_tags_in_mp3splt_state(splt_state *state, ui_state *ui)
     mp3splt_point_set_name(splitpoint, description);
     g_free(description);
     mp3splt_point_set_type(splitpoint, splitpoint_type);
-    mp3splt_append_splitpoint(state, splitpoint);
+    append_point_to_pat(splitpoint, pat);
 
     gint year = 0, track = 0;
     gchar *title = NULL, *artist = NULL, *album = NULL, *genre = NULL, *comment = NULL;
@@ -2230,10 +2186,11 @@ void put_splitpoints_and_tags_in_mp3splt_state(splt_state *state, ui_state *ui)
         SPLT_TAGS_GENRE, genre,
         SPLT_TAGS_COMMENT, comment,
         0);
-    mp3splt_append_tags(state, tags);
+    append_tags_to_pat(tags, pat);
 
     free(title); free(artist); free(album); free(genre); free(comment);
   }
-}
 
+  return pat;
+}
 
