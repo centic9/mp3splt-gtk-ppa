@@ -1,3 +1,9 @@
+mp3splt-gtk (0.9-0ubuntu0~ppa10) xenial; urgency=medium
+
+  * Once more with chnages in replacement strings as well
+
+ -- Dominik Stadler (Ubuntu key) <dominik.stadler@gmx.at>  Mon, 15 Aug 2016 09:56:19 +0200
+
 mp3splt-gtk (0.9-0ubuntu0~ppa9) xenial; urgency=medium
 
   * Try with libgstreamer-plugins-base1.0-dev for Yakkety build.
