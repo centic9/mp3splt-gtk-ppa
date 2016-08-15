@@ -3,7 +3,7 @@
 
 include /usr/share/libmp3splt-dev/mp3splt.rules
   
-BUILD_DEPS := $(BUILD_DEPS), libgtk-3-dev, libgstreamer0.10-dev, libgstreamer-plugins-base0.10-dev | libgstreamer-plugins-base1.0-dev, libaudclient-dev, gnome-doc-utils, rarian-compat
+BUILD_DEPS := $(BUILD_DEPS), libgtk-3-dev, libgstreamer0.10-dev | libgstreamer1.0-dev, libgstreamer-plugins-base0.10-dev | libgstreamer-plugins-base1.0-dev, libaudclient-dev, gnome-doc-utils, rarian-compat
 EXTRA_CONFIGURE_OPTS=--enable-gtk3 --disable-gtk2
 LONG_INTERFACE="graphical"
 SHORT_INTERFACE="GTK"
